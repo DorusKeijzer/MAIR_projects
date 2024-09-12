@@ -1,5 +1,6 @@
 import os
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
 
 data_path = os.path.join("../data", "dialog_acts.dat")
 
@@ -19,7 +20,11 @@ vectorizer.fit(sentences)
 
 bag_of_words = vectorizer.transform(sentences)
 
-dataset = list(zip(labels, bag_of_words))
+
+train_data, test_data, train_label, test_label = train_test_split(
+    bag_of_words, labels, test_size=0.15)
 
 if __name__ == "__main__":
-    print(dataset)
+    print(f"sentences: {sentences[0:10]}")
+    print(f"labels: {labels[0:10]}")
+    print(f"bag of words: {train_data[0:10]}")
