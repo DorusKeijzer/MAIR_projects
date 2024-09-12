@@ -2,7 +2,7 @@ import os
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 
-data_path = os.path.join("../data", "dialog_acts.dat")
+data_path = "../data/dialog_acts.dat"
 
 labels = []
 sentences = []

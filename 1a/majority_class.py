@@ -4,9 +4,7 @@ from base_model import Model
 
 class MajorityClassModel(Model):
     def __init__(self, data, labels):
-        counter = Counter()
-        for label in labels:
-            counter[label] += 1
+        counter = Counter(labels)
         self.majority_class = counter.most_common(1)[0][0]
         self.name = "Majority class model"
 
