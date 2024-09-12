@@ -1,19 +1,20 @@
 from collections import Counter
-from base_model import model
+from base_model import Model
 
 
-class majority_class_model(model):
-    def __init__(self, labels):
+class MajorityClassModel(Model):
+    def __init__(self, data, labels):
         counter = Counter()
         for label in labels:
             counter[label] += 1
-        self.majority_class = counter.most_common(1)[0]
+        self.majority_class = counter.most_common(1)[0][0]
+        self.name = "Majority class model"
 
     def predict(self, sentence: str):
         return self.majority_class
 
 
 if __name__ == "__main__":
-    from read_data import train_label
-    mcm = majority_class_model(train_label)
+    from read_data import train_label, train_data
+    mcm = MajorityClassModel(train_data, train_label)
     print(mcm.predict("test sentence"))
