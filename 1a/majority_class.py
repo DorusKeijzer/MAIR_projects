@@ -1,7 +1,8 @@
 from collections import Counter
+from base_model import model
 
 
-class majority_class_model:
+class majority_class_model(model):
     def __init__(self, labels):
         counter = Counter()
         for label in labels:
