@@ -39,11 +39,12 @@ if __name__ == "__main__":
 
     # Initialize the models with the deduplicated training data
     print("\nEvaluating models with deduplicated data:")
+    rbm_dedup = RuleBasedModel(unique_train_labels, unique_train_labels)  # Rule-Based Model
     dtm_dedup = DecisionTreeModel(dedup_train_data_bow, unique_train_labels)  # Decision Tree Model
     lrm_dedup = LogisticRegressionModel(dedup_train_data_bow, unique_train_labels)  # Logistic Regression Model
     ffnn_dedup = FeedForwardNNModel(dedup_train_data_bow, unique_train_labels)  # Feed Forward NN Model
 
-    models_dedup = [dtm_dedup, lrm_dedup, ffnn_dedup]
+    models_dedup = [rbm_dedup, dtm_dedup, lrm_dedup, ffnn_dedup]
 
     # Evaluate the precision for each model using the same test sentences (to ensure consistency)
     for model in models_dedup:

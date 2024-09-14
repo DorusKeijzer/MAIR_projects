@@ -112,7 +112,7 @@ class FeedForwardNNModel(Model):
             Dense(100, activation='relu', input_shape=(data.shape[1],)),
             Dense(self.num_classes, activation='softmax')
         ])
-        self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['Accuracy'])
         
         # Convert labels to categorical
         labels_categorical = to_categorical([self.label_to_index(label) for label in labels], num_classes=self.num_classes)
