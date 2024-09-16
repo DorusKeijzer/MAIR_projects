@@ -1,5 +1,6 @@
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
+data_path = "DorusKeijzer/MAIR_projects/data/dialog_acts.dat"
 
 # Load the data
 data_path = "1a/dialog_acts.dat"
