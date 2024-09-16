@@ -1,11 +1,15 @@
 from abc import ABC, abstractmethod
 from collections import Counter
 import re
-from read_data import train_sentences, train_label, train_data_bow as train_data, vectorizer, OOV_INDEX, handle_oov
+from read_data import (
+    train_data_bow, train_label, dedup_train_data_bow, unique_train_labels,
+    train_sentences, test_sentences, vectorizer, OOV_INDEX, handle_oov
+)
+
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from keras.models import Sequential
-from keras.layers import Densepip
+from keras.layers import Dense
 from keras.utils import to_categorical
 import numpy as np
 
@@ -46,9 +50,7 @@ class RuleBasedModel(Model):
         }
 
     def predict(self, sentence: str) -> str:
-        """Predict the dialog act based on the presence of keywords, ensuring word boundaries."""
-        sentence = sentence.lower()
-        
+        """Predict the dialog act based on the presence of keywords, ensuring word boundaries."""       
         # Check each dialog act with word boundaries
         for dialog_act, keywords in self.rules.items():
             for keyword in keywords:
@@ -78,8 +80,11 @@ class DecisionTreeModel(Model):
         self.model = DecisionTreeClassifier()
         self.model.fit(data, labels)
 
-    def predict(self, sentence: str):
-        return self.model.predict([sentence])[0]
+    def predict(self, sentence: str) -> str:
+        # Convert the raw sentence to a bag-of-words feature vector
+        sentence_bow = vectorizer.transform([sentence])
+        # Predict the label using the decision tree model
+        return self.model.predict(sentence_bow)[0]
 
 class LogisticRegressionModel(Model):
     """Logistic Regression classifier based on bag-of-words features."""
@@ -91,7 +96,10 @@ class LogisticRegressionModel(Model):
         self.model.fit(data, labels)
 
     def predict(self, sentence: str):
-        return self.model.predict([sentence])[0]
+        # Convert the raw sentence to a bag-of-words feature vector
+        sentence_bow = vectorizer.transform([sentence])
+        # Predict the label using the logistic regression model
+        return self.model.predict(sentence_bow)[0]
 
 class FeedForwardNNModel(Model):
     """Feed Forward Neural Network classifier based on bag-of-words features using Keras."""
@@ -104,11 +112,11 @@ class FeedForwardNNModel(Model):
             Dense(100, activation='relu', input_shape=(data.shape[1],)),
             Dense(self.num_classes, activation='softmax')
         ])
-        self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['Accuracy'])
         
         # Convert labels to categorical
         labels_categorical = to_categorical([self.label_to_index(label) for label in labels], num_classes=self.num_classes)
-        self.model.fit(data, labels_categorical, epochs=10, verbose=0)
+        self.model.fit(data, labels_categorical, epochs=10, verbose=0)  # Train model quietly
 
     def label_to_index(self, label):
         return list(set(train_label)).index(label)
@@ -117,22 +125,23 @@ class FeedForwardNNModel(Model):
         return list(set(train_label))[index]
 
     def predict(self, sentence: str):
-        # Handle OOV for neural network input
-        oov_handled_sentence = handle_oov(" ".join(vectorizer.inverse_transform(sentence)[0]), vectorizer, OOV_INDEX)
-        oov_handled_sentence = np.array(oov_handled_sentence).reshape(1, -1)
-        prediction = self.model.predict(oov_handled_sentence)[0]
+        # Convert the raw sentence to a bag-of-words feature vector and handle OOV
+        sentence_bow = vectorizer.transform([sentence])
+        prediction = self.model.predict(sentence_bow.toarray(), verbose=0)[0]  # Suppress output here
         return self.index_to_label(np.argmax(prediction))
 
+
+
 if __name__ == "__main__":
-    # Initialize the models
-    mcm = MajorityClassModel(train_data, train_label)  # Majority Class Model
+    # Initialize the models with training data
+    mcm = MajorityClassModel(train_sentences, train_label)  # Majority Class Model
     rbm = RuleBasedModel(train_sentences, train_label)  # Rule-Based Model
-    dtm = DecisionTreeModel(train_data, train_label)  # Decision Tree Model
-    lrm = LogisticRegressionModel(train_data, train_label)  # Logistic Regression Model
-    ffnn = FeedForwardNNModel(train_data, train_label)  # Feed Forward NN Model
+    dtm = DecisionTreeModel(train_data_bow, train_label)  # Decision Tree Model
+    lrm = LogisticRegressionModel(train_data_bow, train_label)  # Logistic Regression Model
+    ffnn = FeedForwardNNModel(train_data_bow, train_label)  # Feed Forward NN Model
 
     models = [mcm, rbm, dtm, lrm, ffnn]  # Add more models here so they get evaluated
 
-    # Example usage or testing
+    # Example usage or testing on test data
     for model in models:
-        print(f"Example prediction from {model.name}: {model.predict('hello there, I need a restaurant')}")
+        print(f"Example prediction from {model.name}: {model.predict(test_sentences[0])}")

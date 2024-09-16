@@ -1,21 +1,10 @@
-<<<<<<< HEAD
-import os
-import sys
-=======
->>>>>>> 46ee73298c232a702241eee9cf1031b6c2ea5f6d
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
-print(os.getcwd())
-print("Python executable path:", sys.executable)
-print("Environment location:", sys.prefix)
 data_path = "DorusKeijzer/MAIR_projects/data/dialog_acts.dat"
 
-<<<<<<< HEAD
-=======
 # Load the data
 data_path = "1a/dialog_acts.dat"
 
->>>>>>> 46ee73298c232a702241eee9cf1031b6c2ea5f6d
 labels = []
 sentences = []
 
@@ -26,9 +15,30 @@ with open(data_path) as file:
         labels.append(label)
         sentences.append(sentence.strip())
 
-# Create bag-of-words embeddings
+# Split the original dataset into 85% training and 15% test data (unvectorized sentences)
+train_sentences, test_sentences, train_label, test_label = train_test_split(
+    sentences, labels, test_size=0.15, random_state=42)
+
+# Deduplicate the training dataset
+unique_train_sentences = []
+unique_train_labels = []
+seen_train = set()
+
+for sentence, label in zip(train_sentences, train_label):
+    if sentence not in seen_train:
+        seen_train.add(sentence)
+        unique_train_sentences.append(sentence)
+        unique_train_labels.append(label)
+
+# Create bag-of-words vectorizer based on the original training sentences
 vectorizer = CountVectorizer()
-bag_of_words = vectorizer.fit_transform(sentences)
+vectorizer.fit(train_sentences)
+
+# Create bag-of-words embeddings for the original training data
+train_data_bow = vectorizer.transform(train_sentences)
+
+# Create bag-of-words embeddings for the deduplicated training data
+dedup_train_data_bow = vectorizer.transform(unique_train_sentences)
 
 # Special integer for out-of-vocabulary (OOV) words
 OOV_INDEX = 0
@@ -44,19 +54,16 @@ def handle_oov(sentence, vectorizer, oov_index=OOV_INDEX):
             indices.append(oov_index)  # Assign OOV index for out-of-vocabulary words
     return indices
 
-# Split the data into 85% training and 15% test data
-train_data_bow, test_data_bow, train_label, test_label = train_test_split(
-    bag_of_words, labels, test_size=0.15, random_state=42)
-
-train_sentences, test_sentences = train_test_split(
-    sentences, test_size=0.15, random_state=42)
-
-# Export the variables for use in other scripts
-__all__ = ['train_data_bow', 'test_data_bow', 'train_label', 'test_label', 
-           'train_sentences', 'test_sentences', 'vectorizer', 'OOV_INDEX', 'handle_oov']
+# Export the variables needed for model training and evaluation
+__all__ = [
+    'train_data_bow', 'train_label', 'dedup_train_data_bow', 'unique_train_labels',
+    'train_sentences', 'test_sentences', 'train_label', 'test_label',
+    'vectorizer', 'OOV_INDEX', 'handle_oov'
+]
 
 if __name__ == "__main__":
     # Print out the first few entries for debugging purposes
-    print(f"Sentences: {train_sentences[:10]}")
-    print(f"Labels: {train_label[:10]}")
-    print(f"Bag of words: {train_data_bow[:10].toarray()}")
+    print(f"Original Sentences: {len(train_label)} training, {len(test_label)} testing")
+    print(f"Deduplicated Sentences: {len(unique_train_labels)} training")
+    print(f"Vectorized Original Training Data (first 10 rows):\n{train_data_bow[:10].toarray()}")
+    print(f"Vectorized Deduplicated Training Data (first 10 rows):\n{dedup_train_data_bow[:10].toarray()}")
