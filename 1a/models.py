@@ -144,8 +144,4 @@ if __name__ == "__main__":
 
     # Example usage or testing on test data
     for model in models:
-<<<<<<< HEAD
         print(f"Example prediction from {model.name}: {model.predict(test_sentences[0])}")
-=======
-        print(f"Example prediction from {model.name}: {model.predict(test_sentences[0])}")
->>>>>>> 5e34459d0883bacaace5ce582fb2705f59c2e936
