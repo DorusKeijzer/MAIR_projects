@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 data_path = "DorusKeijzer/MAIR_projects/data/dialog_acts.dat"
 
 # Load the data
-data_path = "1a/dialog_acts.dat"
+data_path = "data/dialog_acts.dat"
 
 labels = []
 sentences = []
@@ -44,6 +44,8 @@ dedup_train_data_bow = vectorizer.transform(unique_train_sentences)
 OOV_INDEX = 0
 
 # Function to handle OOV words for new input
+
+
 def handle_oov(sentence, vectorizer, oov_index=OOV_INDEX):
     tokens = sentence.split()
     indices = []
@@ -51,8 +53,10 @@ def handle_oov(sentence, vectorizer, oov_index=OOV_INDEX):
         if token in vectorizer.vocabulary_:
             indices.append(vectorizer.vocabulary_[token])
         else:
-            indices.append(oov_index)  # Assign OOV index for out-of-vocabulary words
+            # Assign OOV index for out-of-vocabulary words
+            indices.append(oov_index)
     return indices
+
 
 # Export the variables needed for model training and evaluation
 __all__ = [
@@ -63,7 +67,10 @@ __all__ = [
 
 if __name__ == "__main__":
     # Print out the first few entries for debugging purposes
-    print(f"Original Sentences: {len(train_label)} training, {len(test_label)} testing")
+    print(f"Original Sentences: {len(train_label)
+                                 } training, {len(test_label)} testing")
     print(f"Deduplicated Sentences: {len(unique_train_labels)} training")
-    print(f"Vectorized Original Training Data (first 10 rows):\n{train_data_bow[:10].toarray()}")
-    print(f"Vectorized Deduplicated Training Data (first 10 rows):\n{dedup_train_data_bow[:10].toarray()}")
+    print(f"Vectorized Original Training Data (first 10 rows):\n{
+          train_data_bow[:10].toarray()}")
+    print(f"Vectorized Deduplicated Training Data (first 10 rows):\n{
+          dedup_train_data_bow[:10].toarray()}")
