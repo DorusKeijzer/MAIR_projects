@@ -9,6 +9,26 @@ FUNCTION [handle_oov]: For out-of-vocabulary (OOV) words, we created a function 
 
 Then, we export the variables needed for model training and evaluation.
 
+# models.py
+The Python Script file uses modules such as abc, collections, re, sklearn, keras, numpy, and joblib. Module abc offers a an approach to define abstract base classes. Module collections provides different container data types. Re module is used for regular expression matching. sklearn Module is used for Machine Learning model purposes - Decision Tree Classifier, Logistic Regression, and Base Estimator. Keras has been used for a stack of layers. Numpy module has been used for its computational power. And, joblib module has been used for its optimiaztion power around serialization.
+
+CLASS [Model] All models inherit from this class so we have a uniform way of calling them. It implements init and a predict function.
+
+CLASS [RuleBasedModel] This class classifies sentences based on keyword matching for each dialog act.
+
+CLASS [MajorityClassModel] This class calculates the majority class upon initialization and always predicts this class when predicting.
+
+CLASS [ScikitModel] This class is the base class for models using scikit-learn classifiers.
+
+CLASS [DecisionTreeModel] This class is a decision Tree classifier based on bag-of-words features.
+
+CLASS [LogisticRegressionModel] This class is a logistic Regression classifier based on bag-of-words features.
+
+CLASS [FeedForwardNNModel] This class is Feed Forward Neural Network classifier based on bag-of-words features using Keras.
+
+Then, we initialize the models with training data.
+
+
 
 
 
