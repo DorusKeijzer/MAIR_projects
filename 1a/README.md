@@ -13,7 +13,7 @@ python evaluate.py
 ```
 
 if this fails, the repo also contains a dockerfile that allows you to build and run a docker container.
-```
+```bash
 cd 1a
 docker build -t models .
 docker run --name models .
