@@ -16,9 +16,9 @@ def evaluate_model(model: Model, data, labels, label_set):
     """Evaluates the model and prints detailed metrics."""
     predictions = []
     for sentence in data:
-        predictions.append(model.predict(sentence)):
+        predictions.append(model.predict(sentence))
 
-            # Compute overall accuracy
+    # Compute overall accuracy
     accuracy = accuracy_score(labels, predictions)
     print(f"Accuracy of {model.name}: {accuracy:.2%}")
 
@@ -49,6 +49,10 @@ if __name__ == "__main__":
         train_data_bow, train_label)  # Logistic Regression Model
     ffnn_orig = FeedForwardNNModel(
         train_data_bow, train_label)  # Feed Forward NN Model
+
+    ffnn_orig.load_weights()
+    lrm_orig.load_weights()
+    dtm_orig.load_weights()
 
     models_orig = [mcm_orig, rbm_orig, dtm_orig, lrm_orig, ffnn_orig]
 

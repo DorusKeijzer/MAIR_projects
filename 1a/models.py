@@ -12,7 +12,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.utils import to_categorical
 import numpy as np
-from joblib import dump
+from joblib import dump, load
 from sklearn.base import BaseEstimator
 
 
@@ -93,7 +93,15 @@ class ScikitModel(Model):
         if path is None:
             path = f"./model_weights/{
                 self.name.lower().replace(' ', '_')}.joblib"
+        print(f"Saving weights to {path}")
         dump(self.model, path)
+
+    def load_weights(self, path=None):
+        if path is None:
+            path = f"./model_weights/{
+                self.name.lower().replace(' ', '_')}.joblib"
+        print(f"loading {path}")
+        self.model = load(path)
 
     def predict(self, sentence: str) -> str:
         # Convert the raw sentence to a bag-of-words feature vector
@@ -146,7 +154,11 @@ class FeedForwardNNModel(Model):
                 self.name.lower().replace(' ', '_')}.weights.h5"
         self.model.save_weights(path)
 
-    def load(self, path):
+    def load_weights(self, path=None):
+        if path is None:
+            path = f"./model_weights/{
+                self.name.lower().replace(' ', '_')}.weights.h5"
+        print(f"Loading {path}")
         self.model.load_weights(path)
 
     def label_to_index(self, label):
