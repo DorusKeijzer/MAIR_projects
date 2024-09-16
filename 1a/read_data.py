@@ -1,9 +1,21 @@
+<<<<<<< HEAD
+import os
+import sys
+=======
+>>>>>>> 46ee73298c232a702241eee9cf1031b6c2ea5f6d
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
+print(os.getcwd())
+print("Python executable path:", sys.executable)
+print("Environment location:", sys.prefix)
+data_path = "DorusKeijzer/MAIR_projects/data/dialog_acts.dat"
 
+<<<<<<< HEAD
+=======
 # Load the data
 data_path = "1a/dialog_acts.dat"
 
+>>>>>>> 46ee73298c232a702241eee9cf1031b6c2ea5f6d
 labels = []
 sentences = []
 

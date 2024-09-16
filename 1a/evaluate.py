@@ -1,6 +1,12 @@
-from read_data import test_data_bow as test_data, test_label, train_data_bow as train_data, train_label, vectorizer
-from models import Model, MajorityClassModel, RuleBasedModel  # import each model here
-
+from read_data import (
+    test_sentences, test_label, train_sentences, train_label,
+    train_data_bow, dedup_train_data_bow, unique_train_labels,
+    vectorizer
+)
+from models import (
+    Model, MajorityClassModel, RuleBasedModel, DecisionTreeModel, 
+    LogisticRegressionModel, FeedForwardNNModel
+)
 
 def precision(model: Model, data, labels):
     """Returns the precision of the model on the given dataset."""
@@ -8,10 +14,6 @@ def precision(model: Model, data, labels):
     total = 0
     
     for sentence, label in zip(data, labels):
-        # If the model is RuleBasedModel, convert the BoW vector back to text
-        if isinstance(model, RuleBasedModel):
-            sentence = " ".join(vectorizer.inverse_transform(sentence)[0])
-        
         prediction = model.predict(sentence)
         if prediction == label:
             correct += 1
@@ -19,14 +21,32 @@ def precision(model: Model, data, labels):
     
     return correct / total
 
-
 if __name__ == "__main__":
-    # Initialize each model here
-    mcm = MajorityClassModel(train_data, train_label)
-    rbm = RuleBasedModel(train_data, train_label)
+    # Initialize the models with the original training data
+    print("Evaluating models with original data:")
+    mcm_orig = MajorityClassModel(train_sentences, train_label)  # Majority Class Model
+    rbm_orig = RuleBasedModel(train_sentences, train_label)  # Rule-Based Model
+    dtm_orig = DecisionTreeModel(train_data_bow, train_label)  # Decision Tree Model
+    lrm_orig = LogisticRegressionModel(train_data_bow, train_label)  # Logistic Regression Model
+    ffnn_orig = FeedForwardNNModel(train_data_bow, train_label)  # Feed Forward NN Model
 
-    models = [mcm, rbm]  # Add more models here so they get evaluated
+    models_orig = [mcm_orig, rbm_orig, dtm_orig, lrm_orig, ffnn_orig]
 
-    # Evaluate the precision for each model
-    for model in models:
-        print(f"Accuracy of {model.name}: {precision(model, test_data, test_label)}")
+    # Evaluate the precision for each model using test sentences
+    for model in models_orig:
+        accuracy = precision(model, test_sentences, test_label)
+        print(f"Precision of {model.name} with original data: {accuracy:.2%}")
+
+    # Initialize the models with the deduplicated training data
+    print("\nEvaluating models with deduplicated data:")
+    rbm_dedup = RuleBasedModel(unique_train_labels, unique_train_labels)  # Rule-Based Model
+    dtm_dedup = DecisionTreeModel(dedup_train_data_bow, unique_train_labels)  # Decision Tree Model
+    lrm_dedup = LogisticRegressionModel(dedup_train_data_bow, unique_train_labels)  # Logistic Regression Model
+    ffnn_dedup = FeedForwardNNModel(dedup_train_data_bow, unique_train_labels)  # Feed Forward NN Model
+
+    models_dedup = [rbm_dedup, dtm_dedup, lrm_dedup, ffnn_dedup]
+
+    # Evaluate the precision for each model using the same test sentences (to ensure consistency)
+    for model in models_dedup:
+        accuracy = precision(model, test_sentences, test_label)
+        print(f"Precision of {model.name} with deduplicated data: {accuracy:.2%}")
