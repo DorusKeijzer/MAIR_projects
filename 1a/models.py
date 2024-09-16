@@ -89,9 +89,9 @@ class ScikitModel(Model):
     def train(self):
         self.model.fit(self.data, self.labels)
 
-    def store(self, path=None):
+    def save_weights(self, path=None):
         if path is None:
-            path = f"model_weights_{
+            path = f"./model_weights/{
                 self.name.lower().replace(' ', '_')}.joblib"
         dump(self.model, path)
 
@@ -139,6 +139,12 @@ class FeedForwardNNModel(Model):
     def train(self):
         self.model.fit(self.data, self.labels_categorical,
                        epochs=10, verbose=0)
+
+    def save_weights(self, path=None):
+        if path is None:
+            path = f"./model_weights/{
+                self.name.lower().replace(' ', '_')}.weights.h5"
+        self.model.save_weights(path)
 
     def load(self, path):
         self.model.load_weights(path)
