@@ -31,7 +31,15 @@ Then, we initialize the models with training data.
 # train_models.py
 The Python Script file uses the read_data.py and models.py script files to train the models.
 
+# evaluate.py
+The Python Script file uses the read_data.py and models.py script files. It also uses two modules i.e. numpy and sklearn.metrics. sklearn.metrics module has been used to estimate the performance of the machine learning models applied in here. 
 
+FUNCTION [evaluate_model] This function takes model, data, labels, and label_set as parameters. It evaluates the model and prints detailed metrics.
+
+Notably, we have trained three classifiers i.e. Decision Tress, Logistic Regression, and Feed Forward Neural network. We have also used Keras and scikit-learn library for Python to implement these machine learning models.
+
+Accuracy of Decision Tree model      : 97.99%
+Accuracy of Logistic Regression model: 98.25%
 
 
 
