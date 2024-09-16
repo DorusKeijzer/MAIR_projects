@@ -28,6 +28,8 @@ CLASS [FeedForwardNNModel] This class is Feed Forward Neural Network classifier 
 
 Then, we initialize the models with training data.
 
+# train_models.py
+The Python Script file uses the read_data.py and models.py script files to train the models.
 
 
 
