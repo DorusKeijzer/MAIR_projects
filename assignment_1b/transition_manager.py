@@ -40,6 +40,9 @@ class TransitionManager:
 
     def transition(self, dialogue_act):
         """Transitions to the next state based on the current dialogue act"""
+        if dialogue_act not in self.current_state.transitions.keys():
+            # defaults to other in case there is no transition specified for this dialogue act
+            dialogue_act = "other"
         self.set_state(self.current_state.transitions[dialogue_act])
 
     def __repr__(self):
