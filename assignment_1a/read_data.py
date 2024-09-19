@@ -1,9 +1,14 @@
+import os
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
-data_path = "DorusKeijzer/MAIR_projects/data/dialog_acts.dat"
 
-# Load the data
-data_path = "data/dialog_acts.dat"
+
+# Get the directory of the current file (read_data.py)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Construct the path to the data file
+data_path = os.path.join(current_dir, "data", "dialog_acts.dat")
+
 
 labels = []
 sentences = []

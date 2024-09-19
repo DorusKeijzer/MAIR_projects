@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import Counter
 import re
-from read_data import (
+from .read_data import (
     train_data_bow, train_label, dedup_train_data_bow, unique_train_labels,
     train_sentences, test_sentences, vectorizer, OOV_INDEX, handle_oov
 )
