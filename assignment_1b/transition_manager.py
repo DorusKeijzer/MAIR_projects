@@ -18,9 +18,15 @@ class State:
 class TransitionManager:
     """Manages the state transitions: takes a number of states and keeps track of the current state"""
 
-    def __init__(self, states=[], currentstate=None):
+    def __init__(self, states, starting_state=None):
+        if states == []:
+            raise Exception("States cannot be empty")
         self.states = states
-        self.current_state = currentstate
+
+        if starting_state is None:
+            self.current_state = self.states[0]
+        else:
+            self.current_state = starting_state
 
     def set_state(self, state):
         """Sets the current state to one of the valid states"""
@@ -31,6 +37,10 @@ class TransitionManager:
     def register_state(self, state: State):
         """Adds a new state"""
         self.states.append(state)
+
+    def transition(self, dialogue_act):
+        """Transitions to the next state based on the current dialogue act"""
+        self.set_state(self.current_state.transitions[dialogue_act])
 
     def __repr__(self):
         if self.current_state is None:
@@ -46,4 +56,8 @@ if __name__ == "__main__":
         "other": ask_area, "express_area": suggest})
 
     tm = TransitionManager([suggest, ask_area, welcome], welcome)
+    print(tm)
+    tm.transition("other")
+    print(tm)
+    tm.transition("reply_area")
     print(tm)
