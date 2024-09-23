@@ -28,7 +28,7 @@ class TransitionManager:
     def set_state(self, state):
         """Sets the current state to one of the valid states"""
         if state not in self.states:
-            raise Exception("Not a valid state")
+            raise Exception(f"{state} is not a valid state")
         self.current_state = state
 
     def update_preferences(self, key: str, value: str):
@@ -40,19 +40,23 @@ class TransitionManager:
     def transition(self, dialogue_act):
         """If conditions are met, transitions to the next state based on the current dialogue act"""
         if dialogue_act not in self.current_state.transitions.keys():
-            dialogue_act = "unknown"
-        new_state, conditions = self.current_state.transitions[dialogue_act]
+            print("I am sorry, I don't understand. Rephrase your answer")
+            return False
+        conditions, new_state,  = self.current_state.transitions[dialogue_act]
+        print(f"condition: {conditions}")
+        print(f"new_state: {new_state}")
 
         if self._conditions_met(conditions):
 
-            self.set_state(self.current_state.transitions[dialogue_act])
+            self.set_state(new_state)
             return True
         return False
 
-    def _conditions_met(conditions):
+    def _conditions_met(self, conditions):
         """Returns true if all conditions are met, else shortcuts to false"""
+        print(conditions)
         for condition in conditions:
-            if self.preferences[condition] == None:
+            if self.preferences[condition] is None:
                 return False
         return True
 
