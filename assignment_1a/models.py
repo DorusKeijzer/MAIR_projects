@@ -91,15 +91,13 @@ class ScikitModel(Model):
 
     def save_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{
-                self.name.lower().replace(' ', '_')}.joblib"
+            path = f"./model_weights/{self.name.lower().replace(' ', '_')}.joblib"
         print(f"Saving weights to {path}")
         dump(self.model, path)
 
     def load_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{
-                self.name.lower().replace(' ', '_')}.joblib"
+            path = f"./model_weights/{self.name.lower().replace(' ', '_')}.joblib"
         print(f"loading {path}")
         self.model = load(path)
 
@@ -150,14 +148,12 @@ class FeedForwardNNModel(Model):
 
     def save_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{
-                self.name.lower().replace(' ', '_')}.weights.h5"
+            path = f"./model_weights/{self.name.lower().replace(' ', '_')}.weights.h5"
         self.model.save_weights(path)
 
     def load_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{
-                self.name.lower().replace(' ', '_')}.weights.h5"
+            path = f"./model_weights/{self.name.lower().replace(' ', '_')}.weights.h5"
         print(f"Loading {path}")
         self.model.load_weights(path)
 

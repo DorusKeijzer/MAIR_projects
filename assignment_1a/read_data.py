@@ -72,10 +72,7 @@ __all__ = [
 
 if __name__ == "__main__":
     # Print out the first few entries for debugging purposes
-    print(f"Original Sentences: {len(train_label)
-                                 } training, {len(test_label)} testing")
+    print(f"Original Sentences: {len(train_label)} training, {len(test_label)} testing")
     print(f"Deduplicated Sentences: {len(unique_train_labels)} training")
-    print(f"Vectorized Original Training Data (first 10 rows):\n{
-          train_data_bow[:10].toarray()}")
-    print(f"Vectorized Deduplicated Training Data (first 10 rows):\n{
-          dedup_train_data_bow[:10].toarray()}")
+    print(f"Vectorized Original Training Data (first 10 rows):\n{train_data_bow[:10].toarray()}")
+    print(f"Vectorized Deduplicated Training Data (first 10 rows):\n{dedup_train_data_bow[:10].toarray()}")
