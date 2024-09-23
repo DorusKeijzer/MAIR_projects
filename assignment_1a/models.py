@@ -1,19 +1,23 @@
-from abc import ABC, abstractmethod
-from collections import Counter
-import re
+from sklearn.base import BaseEstimator
+from joblib import dump, load
+import numpy as np
+from keras.utils import to_categorical
+from keras.layers import Dense
+from keras.models import Sequential
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 from .read_data import (
     train_data_bow, train_label, dedup_train_data_bow, unique_train_labels,
     train_sentences, test_sentences, vectorizer, OOV_INDEX, handle_oov
 )
+import re
+from collections import Counter
+from abc import ABC, abstractmethod
+import warnings
+import os
 
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import LogisticRegression
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.utils import to_categorical
-import numpy as np
-from joblib import dump, load
-from sklearn.base import BaseEstimator
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+warnings.filterwarnings('ignore')
 
 
 class Model(ABC):
@@ -91,13 +95,15 @@ class ScikitModel(Model):
 
     def save_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{self.name.lower().replace(' ', '_')}.joblib"
+            path = f"./model_weights/{self.name.lower().replace(' ',
+                                                                '_')}.joblib"
         print(f"Saving weights to {path}")
         dump(self.model, path)
 
     def load_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{self.name.lower().replace(' ', '_')}.joblib"
+            path = f"./model_weights/{self.name.lower().replace(' ',
+                                                                '_')}.joblib"
         print(f"loading {path}")
         self.model = load(path)
 
@@ -148,12 +154,14 @@ class FeedForwardNNModel(Model):
 
     def save_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{self.name.lower().replace(' ', '_')}.weights.h5"
+            path = f"./model_weights/{self.name.lower().replace(' ',
+                                                                '_')}.weights.h5"
         self.model.save_weights(path)
 
     def load_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{self.name.lower().replace(' ', '_')}.weights.h5"
+            path = f"./model_weights/{self.name.lower().replace(' ',
+                                                                '_')}.weights.h5"
         print(f"Loading {path}")
         self.model.load_weights(path)
 
