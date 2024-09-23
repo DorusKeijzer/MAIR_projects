@@ -9,6 +9,7 @@ class State:
         self.prompt = ""  # which question the agent will ask in this state
         # allows agent to skp questions that might have already been answered
         self.optional = optional
+        self.make_suggestion = False  # whether the agent should make a suggestion here
 
     def __repr__(self) -> str:
         return self.name
@@ -53,8 +54,6 @@ class TransitionManager:
             print("I am sorry, I don't understand. Rephrase your answer")
             return False
         conditions,  new_state,  = self.current_state.transitions[dialogue_act]
-        print(f"condition: {conditions}")
-        print(f"new_state: {new_state}")
 
         if self._conditions_met(conditions):
 
@@ -70,7 +69,6 @@ class TransitionManager:
 
     def _conditions_met(self, conditions):
         """Returns true if all conditions are met, else shortcuts to false"""
-        print(conditions)
         for condition in conditions:
             if self.preferences[condition] is None:
                 return False
