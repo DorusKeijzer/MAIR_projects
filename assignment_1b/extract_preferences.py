@@ -9,6 +9,7 @@ import nltk
 nltk.download('stopwords')
 nltk.download('punkt')
 
+
 class PreferenceExtractor:
     """
     Extracts user preferences (price range, location, and food type) 
@@ -21,12 +22,12 @@ class PreferenceExtractor:
         self.location_keywords = ['north', 'south', 'east', 'west', 'centre']
         self.food_keywords = [
             'british', 'modern european', 'italian', 'romanian', 'seafood', 'chinese',
-            'steakhouse', 'asian oriental', 'french', 'portuguese', 'indian', 'spanish', 
-            'european', 'vietnamese', 'korean', 'thai', 'moroccan', 'swiss', 'fusion', 
-            'gastropub', 'tuscan', 'international', 'traditional', 'mediterranean', 
-            'polynesian', 'african', 'turkish', 'bistro', 'north american', 
-            'australasian', 'persian', 'jamaican', 'lebanese', 'cuban', 'japanese', 
-            'catalan', 'world food', 'scottish', 'corsican', 'christmas food', 
+            'steakhouse', 'asian oriental', 'french', 'portuguese', 'indian', 'spanish',
+            'european', 'vietnamese', 'korean', 'thai', 'moroccan', 'swiss', 'fusion',
+            'gastropub', 'tuscan', 'international', 'traditional', 'mediterranean',
+            'polynesian', 'african', 'turkish', 'bistro', 'north american',
+            'australasian', 'persian', 'jamaican', 'lebanese', 'cuban', 'japanese',
+            'catalan', 'world food', 'scottish', 'corsican', 'christmas food',
             'venetian', 'kosher', 'greek', 'belgian', 'polish', 'crossover'
         ]
 
@@ -62,7 +63,7 @@ class PreferenceExtractor:
         # Mapping of broader food categories to more specific cuisines
         self.broader_food_categories = {
             'world food': ['international', 'fusion', 'modern european'],
-            'crossover': ['fusion', 'international'],  
+            'crossover': ['fusion', 'international'],
             'gastropub': ['traditional', 'british'],
             'asian oriental': ['chinese', 'japanese', 'thai', 'korean', 'vietnamese']
         }
@@ -71,7 +72,7 @@ class PreferenceExtractor:
         """
         Extracts preferences from user input, including food type, price range, and location.
         If broader food categories are mentioned, they are mapped to more specific food types.
-        
+
         :param user_input: The input provided by the user as a string
         :return: Dictionary containing extracted preferences and a list of fallback preferences
         """
@@ -99,12 +100,13 @@ class PreferenceExtractor:
         by mapping them to more specific cuisines.
 
         :param user_input: The input provided by the user as a string
-        :return: The extracted food type or 'unknown' if not found
+        :return: The extracted food type or None if not found
         """
         # First, check for broader food categories (e.g., 'world food')
         for broad_term, specific_cuisines in self.broader_food_categories.items():
             if broad_term in user_input:
-                return '|'.join(specific_cuisines)  # Join specific cuisines with OR condition
+                # Join specific cuisines with OR condition
+                return '|'.join(specific_cuisines)
 
         # Check for cuisine synonyms
         for cuisine, synonyms in self.cuisine_synonyms.items():
@@ -120,7 +122,7 @@ class PreferenceExtractor:
         Extracts the price range preference from user input using synonyms mapping.
 
         :param user_input: The input provided by the user as a string
-        :return: The extracted price range or 'unknown' if not found
+        :return: The extracted price range or None if not found
         """
         for price_range, synonyms in self.price_synonyms.items():
             for synonym in synonyms:
@@ -135,7 +137,7 @@ class PreferenceExtractor:
         Extracts the location preference from user input using synonyms mapping.
 
         :param user_input: The input provided by the user as a string
-        :return: The extracted location or 'unknown' if not found
+        :return: The extracted location or None if not found
         """
         for location, synonyms in self.location_synonyms.items():
             for synonym in synonyms:
@@ -152,7 +154,8 @@ class PreferenceExtractor:
         stop_words = set(stopwords.words('english'))
         stop_words.update(['need', 'area', 'any'])
         # Filter out stop words and short words
-        words = [word for word in words if word.lower() not in stop_words and len(word) > 4]
+        words = [word for word in words if word.lower(
+        ) not in stop_words and len(word) > 4]
         # Use Levenshtein distance to find the closest match among words and phrases
         closest_matches = []
         min_distance = float('inf')
@@ -160,7 +163,8 @@ class PreferenceExtractor:
             for keyword in keyword_list:
                 distance = lev.distance(word.lower(), keyword.lower())
                 # Adjust threshold based on word length
-                max_distance = 1 if len(word) <= 5 else 2 if len(word) <= 8 else 3
+                max_distance = 1 if len(
+                    word) <= 5 else 2 if len(word) <= 8 else 3
                 if distance < min_distance and distance <= max_distance:
                     min_distance = distance
                     closest_matches = [keyword]
@@ -170,7 +174,7 @@ class PreferenceExtractor:
         if min_distance <= 3:
             return random.choice(closest_matches)
         else:
-            return 'unknown'
+            return None
 
     def _extract_fallback_preferences(self, user_input: str) -> list:
         """
@@ -212,6 +216,7 @@ class PreferenceExtractor:
             if fallbacks:
                 print(f"Fallback Preferences: {fallbacks}")
             print()
+
 
 # Example usage
 if __name__ == "__main__":
