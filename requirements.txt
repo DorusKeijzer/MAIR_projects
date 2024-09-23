@@ -1,6 +1,8 @@
 joblib==1.4.2
 keras==3.5.0
+nltk==3.9.1
 numpy==2.1.1
+pandas==2.2.3
+python_Levenshtein==0.25.1
+python_Levenshtein==0.26.0
 scikit_learn==1.5.2
-levenstein==0.26.0
-re==2.2.1

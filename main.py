@@ -70,19 +70,22 @@ give_phone_number = State("6. Give restaurant phone number",
 ask_food_type = State("4. Ask food type",
                       transitions={
                           "inform": (["location", "price_range", "food_type"], suggest)
-                      }
+                      },
+                      optional=True
                       )
 
 ask_price_range = State("3. Ask price range",
                         transitions={
                             "inform": (["location", "price_range"], suggest)
-                        }
+                        },
+                        optional=True
                         )
 
 ask_area = State("2. Ask Area",
                  transitions={
                      "inform": (["location"], ask_price_range)
-                 }
+                 },
+                 optional=True
                  )
 
 # Initial state
