@@ -6,6 +6,7 @@ class State:
         self.name = name
         self.transitions = transitions
         self.terminal = terminal
+        self.prompt = ""
 
     def __repr__(self) -> str:
         return self.name
@@ -27,6 +28,10 @@ class TransitionManager:
             self.current_state = starting_state
         # will go true if agent reaches a terminal state
         self.dead = False
+
+    def speak(self):
+        """The agent says the prompt associated with this state"""
+        print(self.current_state.prompt)
 
     def set_state(self, state):
         """Sets the current state to one of the valid states"""
