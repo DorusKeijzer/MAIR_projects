@@ -62,7 +62,7 @@ class PreferenceExtractor:
         # Mapping of broader food categories to more specific cuisines
         self.broader_food_categories = {
             'world food': ['international', 'fusion', 'modern european'],
-            'crossover': ['fusion', 'international'],
+            'crossover': ['fusion', 'international'],  
             'gastropub': ['traditional', 'british'],
             'asian oriental': ['chinese', 'japanese', 'thai', 'korean', 'vietnamese']
         }
@@ -144,12 +144,6 @@ class PreferenceExtractor:
 
         # If no synonym found, attempt to match directly
         return self._match_closest(user_input, self.location_keywords, 'location')
-
-    def _extract_preference(self, user_input: str, keyword_list: list, preference_type: str) -> str:
-        """
-        This method is now redundant because we've specialized methods for each preference type.
-        """
-        pass  # No longer used
 
     def _match_closest(self, user_input: str, keyword_list: list, preference_type: str) -> str:
         # Tokenize the user input using NLTK's word_tokenize
