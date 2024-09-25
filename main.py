@@ -137,8 +137,6 @@ if __name__ == "__main__":
         if tm.current_state.make_suggestion:
             restaurant = restaurant_lookup.lookup(tm.preferences)
             print(restaurant)
-        if tm.current_state == suggest:
-            restaurant_lookup.lookup(tm.preferences)
         user_input = input("Your answer: ")
         # print(f"User: {user_input}")
 
