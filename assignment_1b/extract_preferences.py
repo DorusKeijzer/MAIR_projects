@@ -8,6 +8,7 @@ import nltk
 # Ensure the stopwords corpus is downloaded
 nltk.download('stopwords')
 nltk.download('punkt')
+nltk.download('punkt_tab')
 
 
 class PreferenceExtractor:
