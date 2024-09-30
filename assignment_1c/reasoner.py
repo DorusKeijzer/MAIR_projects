@@ -2,7 +2,9 @@ from typing import List, Dict
 
 
 class literal:
-    def __init__(self, name: str, truth_value):
+    """literal(name: str, truth_value: bool)"""
+
+    def __init__(self, name: str, truth_value: bool):
         self.name = name
         self.truth_value = truth_value
 

@@ -4,6 +4,7 @@ from assignment_1a.read_data import train_data_bow, train_label
 from assignment_1a.models import DecisionTreeModel  # , FeedForwardNNMode
 from assignment_1b.extract_preferences import PreferenceExtractor
 from assignment_1b.lookup_restaurant import RestaurantLookup
+from assignment_1c.reasoner import inference_engine, rule, literal
 import os
 
 # transition prediction model
@@ -127,9 +128,25 @@ restaurant_lookup = RestaurantLookup()
 
 ##############################################
 
+# reasoner configuration
+
+##############################################
+cheapANDgood = rule([
+    literal("cheap", True),
+    literal("good food", True)],
+    literal("touristic", True))
+
+romanian = rule([literal("romanian", True)], literal("touristic", False))
+
+busy = rule([literal("busy", True)], literal("assigned_seats", True))
+long_stay = rule([literal("long_stay", True)], literal("children", False))
+##############################################
+
 # Dialogue loop
 
 ##############################################
+
+
 if __name__ == "__main__":
     tm.speak()
     while not tm.dead:
@@ -138,7 +155,6 @@ if __name__ == "__main__":
             restaurant = restaurant_lookup.lookup(tm.preferences)
             print(restaurant)
         user_input = input("Your answer: ")
-        # print(f"User: {user_input}")
 
         # updates the preferences
         preferences, fallback = preference_extractor.extract_preferences(
@@ -146,14 +162,11 @@ if __name__ == "__main__":
         for pref_key in preferences.keys():
             if (pref_value := preferences[pref_key]) is not None:
                 tm.update_preferences(pref_key, pref_value)
-        # print(f"Preferences: {preferences}")
 
         # predicts intent
         dialogue_act = model.predict(user_input)
-        # print(f"Predicted dialogue act: {dialogue_act}")
 
         # decides which way to transition based on preferences and intent
         success = tm.transition(dialogue_act)
-        # print(f"Transition success: {success}")
 
         tm.speak()
