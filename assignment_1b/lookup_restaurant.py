@@ -1,157 +1,107 @@
+# restaurant_lookup.py
+
 import pandas as pd
 import os
 import random
+from assignment_1c.reasoner import InferenceEngine, Literal, rules
 
 
 class RestaurantLookup:
     def __init__(self, csv_path=None):
         if csv_path is None:
-            csv_path = os.path.join('assignment_1b', 'data', 'restaurant_info.csv')
+            csv_path = os.path.join("MAIR_projects", "data", "restaurant_info_extended.csv")
         self.restaurant_data = pd.read_csv(csv_path)
-        self.current_preferences = {}
-        self.remaining_restaurants = []
+        self.inference_engine = InferenceEngine(rules)
 
-    def _same_preferences(self, preferences: dict):
-        return preferences == self.current_preferences
+    def get_candidates(self, preferences: dict):
+        # Filter restaurants based on user preferences
+        filtered_data = self.restaurant_data.copy()
+        filtered_data = self._filter_by_price(filtered_data, preferences.get('price_range'))
+        print(f"Total restaurants after price filter: {len(filtered_data)}")
+        filtered_data = self._filter_by_location(filtered_data, preferences.get('location'))
+        print(f"Total restaurants after location filter: {len(filtered_data)}")
+        filtered_data = self._filter_by_food_type(filtered_data, preferences.get('food_type'))
+        print(f"Total restaurants after food type filter: {len(filtered_data)}")
 
-    def lookup(self, preferences: dict):
-        if self._same_preferences(preferences) and self.remaining_restaurants:
-            selected_restaurant = self.remaining_restaurants.pop(0)
-            if not self.remaining_restaurants:
-                self.remaining_restaurants = None
-            return selected_restaurant
-        elif self._same_preferences(preferences) and not self.remaining_restaurants:
-            return "No more matching restaurants available"
-        else:
-            self.current_preferences = preferences.copy()
+        if filtered_data.empty:
+            return pd.DataFrame()  # Return empty DataFrame if no candidates found
 
-            filtered_data = self.restaurant_data.copy()
-            filtered_data = self._filter_by_price(filtered_data, preferences.get('price_range'))
-            filtered_data = self._filter_by_location(filtered_data, preferences.get('location'))
-            filtered_data = self._filter_by_food_type(filtered_data, preferences.get('food_type'))
+        return filtered_data
 
-            if filtered_data.empty:
-                return "No matching restaurants found"
+    def apply_inference_and_select(self, candidates: pd.DataFrame, additional_requirements: dict):
+        if candidates.empty:
+            return "No matching restaurants found"
 
-            filtered_restaurants = filtered_data.sample(frac=1).reset_index(drop=True)
-            self.remaining_restaurants = [row for idx, row in filtered_restaurants.iterrows()]
-            selected_restaurant = self.remaining_restaurants.pop(0)
-            if not self.remaining_restaurants:
-                self.remaining_restaurants = None
-            return selected_restaurant
+        matching_restaurants = []
+        for _, restaurant in candidates.iterrows():
+            # Create literals for known properties
+            known_properties = [
+                Literal('pricerange', restaurant['pricerange']),
+                Literal('food_quality', restaurant['food_quality']),
+                Literal('food', restaurant['food']),
+                Literal('crowdedness', restaurant['crowdedness']),
+                Literal('length_of_stay', restaurant['length_of_stay']),
+            ]
 
-    # Include the rest of your methods (_filter_by_price, _filter_by_location, etc.)
+            # Apply inference engine and unpack the results
+            inferred, explanations = self.inference_engine.inference(known_properties)
 
+            # Check if restaurant meets additional requirements
+            meets_requirements = True
+            for req_property, req_value in additional_requirements.items():
+                inferred_value = inferred.get(req_property)
+                if inferred_value == 'contradictory' or inferred_value != req_value:
+                    meets_requirements = False
+                    break
 
+            if meets_requirements:
+                # Store both inferred facts and explanations
+                restaurant['inferred'] = inferred
+                restaurant['explanations'] = explanations
+                matching_restaurants.append(restaurant)
+        print(f"Number of matching restaurants: {len(matching_restaurants)}")
+
+        if not matching_restaurants:
+            return "No matching restaurants found with your additional requirements"
+
+        # Randomly select a restaurant from the matching ones
+        selected_restaurant = random.choice(matching_restaurants)
+        return {
+            'restaurant': selected_restaurant,
+            'inferred': selected_restaurant['inferred'],
+            'explanations': selected_restaurant['explanations']
+        }
+
+    def generate_reasoning(self, selected_restaurant_data: dict, additional_requirements: dict) -> str:
+        reasoning = ""
+        inferred_props = selected_restaurant_data.get('inferred', {})
+        explanations = selected_restaurant_data.get('explanations', {})
+        for req in additional_requirements:
+            if req in inferred_props:
+                value = inferred_props[req]
+                if value == 'contradictory':
+                    reasoning += f"The property '{req}' has contradictory inferences.\n"
+                elif value is True:
+                    explanation = explanations.get(req, f"The restaurant is {req} based on our inference rules.")
+                    reasoning += explanation + "\n"
+                elif value is False:
+                    reasoning += f"The restaurant is not {req} based on our inference rules.\n"
+        return reasoning.strip()
+
+    # Filtering methods
     def _filter_by_price(self, data: pd.DataFrame, price_range: str) -> pd.DataFrame:
-        """
-        Filters the restaurant data by price range.
-
-        :param data: The DataFrame containing restaurant data.
-        :param price_range: The desired price range ('cheap', 'moderate', 'expensive') or 'unknown'.
-        :return: The filtered DataFrame.
-        """
-        if price_range and price_range:
-            return data[data['pricerange'].str.lower() == price_range.lower()]
+        if price_range and price_range.lower() != 'any':
+            return data[data['pricerange'].str.lower().str.contains(price_range.lower(), na=False)]
         return data
 
     def _filter_by_location(self, data: pd.DataFrame, location: str) -> pd.DataFrame:
-        """
-        Filters the restaurant data by location.
-
-        :param data: The DataFrame containing restaurant data.
-        :param location: The desired location ('north', 'south', 'center', etc.) or 'unknown'.
-        :return: The filtered DataFrame.
-        """
-        if location and location:
-            return data[data['area'].str.lower() == location.lower()]
+        if location and location.lower() != 'any':
+            return data[data['area'].str.lower().str.contains(location.lower(), na=False)]
         return data
 
     def _filter_by_food_type(self, data: pd.DataFrame, food_type: str) -> pd.DataFrame:
-        """
-        Filters the restaurant data by food type.
-
-        :param data: The DataFrame containing restaurant data.
-        :param food_type: The desired food type or 'unknown'. Supports broader food categories.
-        :return: The filtered DataFrame.
-        """
-        if food_type and food_type:
-            # Check if the food_type contains multiple cuisines (e.g., 'fusion|international')
-            food_types = food_type.split(
-                '|') if '|' in food_type else [food_type]
-            return data[data['food'].str.lower().str.contains('|'.join(food_types), na=False)]
+        if food_type and food_type.lower() != 'any':
+            food_types = food_type.split('|') if '|' in food_type else [food_type]
+            pattern = '|'.join(food_types)
+            return data[data['food'].str.lower().str.contains(pattern, na=False)]
         return data
-
-    def _score_restaurants(self, restaurants: pd.DataFrame, preferences: dict):
-        """
-        Scores the restaurants based on how many preferences they match.
-
-        :param restaurants: DataFrame containing restaurant matches.
-        :param preferences: Dictionary containing 'price_range', 'location', and 'food_type' preferences.
-        :return: List of tuples (restaurant_row, score), where score indicates how many preferences were matched.
-        """
-        scored_restaurants = []
-
-        for idx, restaurant in restaurants.iterrows():
-            score = 0
-
-            # Check how many preferences are matched
-            if restaurant['pricerange'].lower() == preferences['price_range'].lower():
-                score += 1
-            if restaurant['area'].lower() == preferences['location'].lower():
-                score += 1
-            if preferences['food_type'].lower() in restaurant['food'].lower():
-                score += 1
-
-            # Store the restaurant and its score
-            scored_restaurants.append((restaurant, score))
-
-        return scored_restaurants
-
-    def _select_best_restaurant(self, scored_restaurants):
-        """
-        Selects the restaurant with the highest score. If there are multiple restaurants
-        with the same highest score, one is chosen randomly.
-
-        :param scored_restaurants: List of tuples (restaurant_row, score).
-        :return: The selected restaurant and the list of remaining restaurants.
-        """
-        # Find the highest score
-        max_score = max(scored_restaurants, key=lambda x: x[1])[1]
-        # Filter restaurants with the highest score
-        best_matches = [restaurant for restaurant,
-                        score in scored_restaurants if score == max_score]
-
-        # Pick one at random if there are multiple best matches
-        selected_restaurant = random.choice(best_matches) if len(
-            best_matches) > 1 else best_matches[0]
-
-        # Store the remaining restaurants for future suggestions
-        remaining_restaurants = [restaurant for restaurant,
-                                 score in scored_restaurants if restaurant is not selected_restaurant]
-
-        return selected_restaurant[0], remaining_restaurants
-
-    def test_lookup(self):
-        """
-        Runs a test lookup using predefined preferences.
-        """
-        example_preferences = {
-            'price_range': 'moderate',
-            'location': 'west',
-            'food_type': 'british'
-        }
-
-        # Perform the lookup based on example preferences
-        print(f"Preferences: {example_preferences}")
-        matched_restaurants = self.lookup(example_preferences)
-        print(f"Matched Restaurant: \n{matched_restaurants}\n")
-
-
-# Example usage and test case
-if __name__ == "__main__":
-    # Initialize the RestaurantLookup class
-    lookup_service = RestaurantLookup()
-
-    # Run the test case
-    lookup_service.test_lookup()
