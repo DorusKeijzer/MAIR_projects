@@ -1,5 +1,6 @@
 import re
 import random
+import assignment_1c.config
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import nltk
@@ -143,24 +144,32 @@ class PreferenceExtractor:
         return self._match_closest(user_input, self.location_keywords)
 
     def _match_closest(self, user_input: str, keyword_list: list) -> str:
-        words = word_tokenize(user_input)
-        stop_words = set(stopwords.words('english'))
-        stop_words.update(['need', 'area', 'any', 'price', 'pricerange'])
-        words = [word for word in words if word.lower() not in stop_words and len(word) > 4]
-        closest_matches = []
-        min_distance = float('inf')
-        for word in words:
-            for keyword in keyword_list:
-                distance = lev.distance(word.lower(), keyword.lower())
-                max_distance = 1 if len(word) <= 5 else 2 if len(word) <= 8 else 3
-                if distance < min_distance and distance <= max_distance:
-                    min_distance = distance
-                    closest_matches = [keyword]
-                elif distance == min_distance and distance <= max_distance:
-                    closest_matches.append(keyword)
-        if min_distance <= 3:
-            return random.choice(closest_matches)
+        if assignment_1c.config.levenshtein:
+            # Use Levenshtein distance for fuzzy matching
+            words = word_tokenize(user_input)
+            stop_words = set(stopwords.words('english'))
+            stop_words.update(['need', 'area', 'any', 'price', 'pricerange'])
+            words = [word for word in words if word.lower() not in stop_words and len(word) > 4]
+            closest_matches = []
+            min_distance = float('inf')
+            for word in words:
+                for keyword in keyword_list:
+                    distance = lev.distance(word.lower(), keyword.lower())
+                    max_distance = 1 if len(word) <= 5 else 2 if len(word) <= 8 else 3
+                    if distance < min_distance and distance <= max_distance:
+                        min_distance = distance
+                        closest_matches = [keyword]
+                    elif distance == min_distance and distance <= max_distance:
+                        closest_matches.append(keyword)
+            if min_distance <= 3:
+                return random.choice(closest_matches)
+            else:
+                return None
         else:
+            # Use exact matching
+            for keyword in keyword_list:
+                if keyword.lower() in user_input:
+                    return keyword
             return None
 
     def _extract_fallback_preferences(self, user_input: str) -> list:

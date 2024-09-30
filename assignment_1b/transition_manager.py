@@ -1,3 +1,4 @@
+import assignment_1c.config
 class State:
     """Keeps track of one state and the states it transitions to."""
 
@@ -16,7 +17,7 @@ class State:
         self.prompt = ""  # The question the agent will ask in this state
         self.optional = optional  # Allows agent to skip questions that might have already been answered
         self.make_suggestion = False  # Whether the agent should make a suggestion here
-
+        
     def __repr__(self) -> str:
         return self.name
 
@@ -38,11 +39,16 @@ class TransitionManager:
             self.current_state = self.states[0]
         else:
             self.current_state = starting_state
+        self.additional_requirements = {}
+        self.candidate_restaurants = []
         self.dead = False  # Will become True if agent reaches a terminal state
 
     def speak(self):
         """The agent says the prompt associated with the current state."""
-        print(self.current_state.prompt)
+        output = self.current_state.prompt
+        if assignment_1c.config.all_caps:
+            output = output.upper()
+        print(output)
 
     def set_state(self, state):
         """Sets the current state to one of the valid states."""

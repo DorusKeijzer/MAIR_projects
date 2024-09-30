@@ -46,6 +46,11 @@ class RestaurantLookup:
             # Apply inference engine and unpack the results
             inferred, explanations = self.inference_engine.inference(known_properties)
 
+            # Debug statements
+            print(f"Restaurant: {restaurant['restaurantname']}")
+            print(f"Inferred: {inferred}")
+            print(f"Explanations: {explanations}")
+
             # Check if restaurant meets additional requirements
             meets_requirements = True
             for req_property, req_value in additional_requirements.items():
@@ -71,6 +76,7 @@ class RestaurantLookup:
             'inferred': selected_restaurant['inferred'],
             'explanations': selected_restaurant['explanations']
         }
+
 
     def generate_reasoning(self, selected_restaurant_data: dict, additional_requirements: dict) -> str:
         reasoning = ""
