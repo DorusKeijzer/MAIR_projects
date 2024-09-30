@@ -4,50 +4,44 @@ import random
 
 
 class RestaurantLookup:
-    """
-    Class to handle restaurant lookups based on user preferences.
-    It loads the restaurant data and filters it based on price range, location, and food type.
-    """
-
     def __init__(self, csv_path=None):
-        """
-        Initializes the class by loading the restaurant data from a CSV file.
-
-        :param csv_path: The path to the restaurant CSV data file. If None, uses the default path.
-        """
-        # Load CSV file
         if csv_path is None:
-            csv_path = os.path.join(
-                'assignment_1b', 'data', 'restaurant_info.csv')
+            csv_path = os.path.join('assignment_1b', 'data', 'restaurant_info.csv')
         self.restaurant_data = pd.read_csv(csv_path)
+        self.current_preferences = {}
+        self.remaining_restaurants = []
+
+    def _same_preferences(self, preferences: dict):
+        return preferences == self.current_preferences
 
     def lookup(self, preferences: dict):
-        """
-        Looks up restaurants in the CSV data based on the user's extracted preferences.
+        if self._same_preferences(preferences) and self.remaining_restaurants:
+            selected_restaurant = self.remaining_restaurants.pop(0)
+            if not self.remaining_restaurants:
+                self.remaining_restaurants = None
+            return selected_restaurant
+        elif self._same_preferences(preferences) and not self.remaining_restaurants:
+            return "No more matching restaurants available"
+        else:
+            self.current_preferences = preferences.copy()
 
-        :param preferences: Dictionary containing 'price_range', 'location', and 'food_type' preferences.
-        :return: A single restaurant based on the best match or a message if no match is found.
-        """
-        filtered_data = self.restaurant_data.copy()
-        # Apply filters based on the preferences
-        filtered_data = self._filter_by_price(
-            filtered_data, preferences.get('price_range'))
-        filtered_data = self._filter_by_location(
-            filtered_data, preferences.get('location'))
-        filtered_data = self._filter_by_food_type(
-            filtered_data, preferences.get('food_type'))
+            filtered_data = self.restaurant_data.copy()
+            filtered_data = self._filter_by_price(filtered_data, preferences.get('price_range'))
+            filtered_data = self._filter_by_location(filtered_data, preferences.get('location'))
+            filtered_data = self._filter_by_food_type(filtered_data, preferences.get('food_type'))
 
-        # If no matches, return a message
-        if filtered_data.empty:
-            return "No matching restaurants found"
+            if filtered_data.empty:
+                return "No matching restaurants found"
 
-        # Score the restaurants and select the best one
-        scored_restaurants = self._score_restaurants(
-            filtered_data, preferences)
-        selected_restaurant, _ = self._select_best_restaurant(
-            scored_restaurants)
+            filtered_restaurants = filtered_data.sample(frac=1).reset_index(drop=True)
+            self.remaining_restaurants = [row for idx, row in filtered_restaurants.iterrows()]
+            selected_restaurant = self.remaining_restaurants.pop(0)
+            if not self.remaining_restaurants:
+                self.remaining_restaurants = None
+            return selected_restaurant
 
-        return selected_restaurant
+    # Include the rest of your methods (_filter_by_price, _filter_by_location, etc.)
+
 
     def _filter_by_price(self, data: pd.DataFrame, price_range: str) -> pd.DataFrame:
         """
