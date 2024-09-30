@@ -1,4 +1,7 @@
+import pyttsx3
 import assignment_1c.config
+
+
 class State:
     """Keeps track of one state and the states it transitions to."""
 
@@ -15,9 +18,10 @@ class State:
         self.transitions = transitions
         self.terminal = terminal  # True for the final node
         self.prompt = ""  # The question the agent will ask in this state
-        self.optional = optional  # Allows agent to skip questions that might have already been answered
+        # Allows agent to skip questions that might have already been answered
+        self.optional = optional
         self.make_suggestion = False  # Whether the agent should make a suggestion here
-        
+
     def __repr__(self) -> str:
         return self.name
 
@@ -30,7 +34,8 @@ class TransitionManager:
         :param states: List of State objects.
         :param starting_state: The initial state to start from.
         """
-        self.preferences = {"food_type": None, "price_range": None, "location": None}
+        self.preferences = {"food_type": None,
+                            "price_range": None, "location": None}
         if not states:
             raise Exception("States cannot be empty")
         self.states = states
@@ -42,6 +47,7 @@ class TransitionManager:
         self.additional_requirements = {}
         self.candidate_restaurants = []
         self.dead = False  # Will become True if agent reaches a terminal state
+        self.tts_engine = pyttsx3.init()
 
     def speak(self):
         """The agent says the prompt associated with the current state."""
@@ -49,6 +55,9 @@ class TransitionManager:
         if assignment_1c.config.all_caps:
             output = output.upper()
         print(output)
+        if assignment_1c.config.text_to_speech:
+            self.tts_engine.say(output)
+            self.tts_engine.runAndWait()
 
     def set_state(self, state):
         """Sets the current state to one of the valid states."""
@@ -65,7 +74,8 @@ class TransitionManager:
     def update_preferences(self, key: str, value: str):
         """Updates the user's preferences."""
         if key not in self.preferences.keys():
-            raise KeyError("Key must be 'food_type', 'price_range', or 'location'")
+            raise KeyError(
+                "Key must be 'food_type', 'price_range', or 'location'")
         self.preferences[key] = value
 
     def transition(self, dialogue_act):
