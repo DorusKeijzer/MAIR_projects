@@ -1,15 +1,8 @@
 from typing import List, Dict
 
 
-<<<<<<< HEAD
-class literal:
-    """literal(name: str, truth_value: bool)"""
-
-    def __init__(self, name: str, truth_value: bool):
-=======
 class Literal:
     def __init__(self, name: str, truth_value):
->>>>>>> 59c14377ca31a8d4e47849fd60859a2b0f6d2e64
         self.name = name
         self.truth_value = truth_value
 
@@ -60,7 +53,8 @@ class InferenceEngine:
                         if known[r.consequent] != r.consequent_value and known[r.consequent] != 'contradictory':
                             known[r.consequent] = 'contradictory'
                             inferred[r.consequent] = 'contradictory'
-                            explanations[r.consequent] = f"Contradiction detected for {r.consequent}"
+                            explanations[r.consequent] = f"Contradiction detected for {
+                                r.consequent}"
                             contradictions[r.consequent] = True
                             new_inference = True
             if not new_inference:

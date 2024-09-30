@@ -9,19 +9,24 @@ from assignment_1c.reasoner import InferenceEngine, Literal, rules
 class RestaurantLookup:
     def __init__(self, csv_path=None):
         if csv_path is None:
-            csv_path = os.path.join("MAIR_projects", "data", "restaurant_info_extended.csv")
+            csv_path = os.path.join(
+                os.getcwd(), "data", "restaurant_info_extended.csv")
         self.restaurant_data = pd.read_csv(csv_path)
         self.inference_engine = InferenceEngine(rules)
 
     def get_candidates(self, preferences: dict):
         # Filter restaurants based on user preferences
         filtered_data = self.restaurant_data.copy()
-        filtered_data = self._filter_by_price(filtered_data, preferences.get('price_range'))
+        filtered_data = self._filter_by_price(
+            filtered_data, preferences.get('price_range'))
         print(f"Total restaurants after price filter: {len(filtered_data)}")
-        filtered_data = self._filter_by_location(filtered_data, preferences.get('location'))
+        filtered_data = self._filter_by_location(
+            filtered_data, preferences.get('location'))
         print(f"Total restaurants after location filter: {len(filtered_data)}")
-        filtered_data = self._filter_by_food_type(filtered_data, preferences.get('food_type'))
-        print(f"Total restaurants after food type filter: {len(filtered_data)}")
+        filtered_data = self._filter_by_food_type(
+            filtered_data, preferences.get('food_type'))
+        print(f"Total restaurants after food type filter: {
+              len(filtered_data)}")
 
         if filtered_data.empty:
             return pd.DataFrame()  # Return empty DataFrame if no candidates found
@@ -44,7 +49,8 @@ class RestaurantLookup:
             ]
 
             # Apply inference engine and unpack the results
-            inferred, explanations = self.inference_engine.inference(known_properties)
+            inferred, explanations = self.inference_engine.inference(
+                known_properties)
 
             # Debug statements
             print(f"Restaurant: {restaurant['restaurantname']}")
@@ -77,7 +83,6 @@ class RestaurantLookup:
             'explanations': selected_restaurant['explanations']
         }
 
-
     def generate_reasoning(self, selected_restaurant_data: dict, additional_requirements: dict) -> str:
         reasoning = ""
         inferred_props = selected_restaurant_data.get('inferred', {})
@@ -86,12 +91,15 @@ class RestaurantLookup:
             if req in inferred_props:
                 value = inferred_props[req]
                 if value == 'contradictory':
-                    reasoning += f"The property '{req}' has contradictory inferences.\n"
+                    reasoning += f"The property '{
+                        req}' has contradictory inferences.\n"
                 elif value is True:
-                    explanation = explanations.get(req, f"The restaurant is {req} based on our inference rules.")
+                    explanation = explanations.get(req, f"The restaurant is {
+                                                   req} based on our inference rules.")
                     reasoning += explanation + "\n"
                 elif value is False:
-                    reasoning += f"The restaurant is not {req} based on our inference rules.\n"
+                    reasoning += f"The restaurant is not {
+                        req} based on our inference rules.\n"
         return reasoning.strip()
 
     # Filtering methods
@@ -107,7 +115,8 @@ class RestaurantLookup:
 
     def _filter_by_food_type(self, data: pd.DataFrame, food_type: str) -> pd.DataFrame:
         if food_type and food_type.lower() != 'any':
-            food_types = food_type.split('|') if '|' in food_type else [food_type]
+            food_types = food_type.split(
+                '|') if '|' in food_type else [food_type]
             pattern = '|'.join(food_types)
             return data[data['food'].str.lower().str.contains(pattern, na=False)]
         return data
