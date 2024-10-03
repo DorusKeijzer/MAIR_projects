@@ -4,7 +4,7 @@ from assignment_1a.read_data import train_data_bow, train_label
 from assignment_1a.models import DecisionTreeModel
 from assignment_1b.extract_preferences import PreferenceExtractor
 from assignment_1b.lookup_restaurant import RestaurantLookup
-import assignment_0c.config
+import assignment_1c.config
 
 # Initialize the dialogue system components
 preference_extractor = PreferenceExtractor()
@@ -150,8 +150,7 @@ def process_user_input(user_input, tm, preference_extractor, model, restaurant_l
             if pref_value is not None:
                 if tm.preferences.get(pref_key) is not None and not assignment_1c.config.allow_preference_change:
                     # Preference already set and changes not allowed
-                    message = f"Sorry, you cannot change your {
-                        pref_key.replace('_', ' ')} preference."
+                    message = f"Sorry, you cannot change your {pref_key.replace('_', ' ')} preference."
                     if assignment_1c.config.all_caps:
                         message = message.upper()
                     print(message)
@@ -162,8 +161,7 @@ def process_user_input(user_input, tm, preference_extractor, model, restaurant_l
                         tm.pending_pref_value = pref_value
                         # Set to Confirmation state
                         tm.set_state("Confirmation")
-                        tm.current_state.prompt = f"Did you mean {pref_key.replace('_', ' ')}: {
-                            pref_value}? (yes/no)"
+                        tm.current_state.prompt = f"Did you mean {pref_key.replace('_', ' ')}: {pref_value}? (yes/no)"
                         if assignment_1c.config.all_caps:
                             tm.current_state.prompt = tm.current_state.prompt.upper()
                         tm.speak()
@@ -214,8 +212,7 @@ def make_suggestion(tm, restaurant_lookup):
         reasoning = restaurant_lookup.generate_reasoning(
             selected_restaurant_data, tm.additional_requirements)
         output = (f"I recommend '{selected_restaurant['restaurantname']}', it is an "
-                  f"{selected_restaurant['pricerange']} {
-                      selected_restaurant['food']} restaurant "
+                  f"{selected_restaurant['pricerange']} {selected_restaurant['food']} restaurant "
                   f"in the {selected_restaurant['area']} of town.")
         if reasoning:
             output += "\n" + reasoning

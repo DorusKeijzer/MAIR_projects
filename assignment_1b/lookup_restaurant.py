@@ -1,5 +1,3 @@
-# restaurant_lookup.py
-
 import pandas as pd
 import os
 import random
@@ -10,7 +8,7 @@ class RestaurantLookup:
     def __init__(self, csv_path=None):
         if csv_path is None:
             csv_path = os.path.join(
-                os.getcwd(), "data", "restaurant_info_extended.csv")
+                os.getcwd(),"MAIR_projects\\" "data", "restaurant_info_extended.csv")
         self.restaurant_data = pd.read_csv(csv_path)
         self.inference_engine = InferenceEngine(rules)
 
@@ -25,8 +23,7 @@ class RestaurantLookup:
         print(f"Total restaurants after location filter: {len(filtered_data)}")
         filtered_data = self._filter_by_food_type(
             filtered_data, preferences.get('food_type'))
-        print(f"Total restaurants after food type filter: {
-              len(filtered_data)}")
+        print(f"Total restaurants after food type filter: {len(filtered_data)}")
 
         if filtered_data.empty:
             return pd.DataFrame()  # Return empty DataFrame if no candidates found
@@ -91,15 +88,12 @@ class RestaurantLookup:
             if req in inferred_props:
                 value = inferred_props[req]
                 if value == 'contradictory':
-                    reasoning += f"The property '{
-                        req}' has contradictory inferences.\n"
+                    reasoning += f"The property '{req}' has contradictory inferences.\n"
                 elif value is True:
-                    explanation = explanations.get(req, f"The restaurant is {
-                                                   req} based on our inference rules.")
+                    explanation = explanations.get(req, f"The restaurant is {req} based on our inference rules.")
                     reasoning += explanation + "\n"
                 elif value is False:
-                    reasoning += f"The restaurant is not {
-                        req} based on our inference rules.\n"
+                    reasoning += f"The restaurant is not {req} based on our inference rules.\n"
         return reasoning.strip()
 
     # Filtering methods

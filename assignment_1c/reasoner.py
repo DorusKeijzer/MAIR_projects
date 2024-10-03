@@ -53,8 +53,7 @@ class InferenceEngine:
                         if known[r.consequent] != r.consequent_value and known[r.consequent] != 'contradictory':
                             known[r.consequent] = 'contradictory'
                             inferred[r.consequent] = 'contradictory'
-                            explanations[r.consequent] = f"Contradiction detected for {
-                                r.consequent}"
+                            explanations[r.consequent] = f"Contradiction detected for {r.consequent}"
                             contradictions[r.consequent] = True
                             new_inference = True
             if not new_inference:

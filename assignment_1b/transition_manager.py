@@ -70,6 +70,10 @@ class TransitionManager:
         if state not in self.states:
             raise Exception(f"{state} is not a valid state")
         self.current_state = state
+        # Add this block to handle terminal states
+        if self.current_state.terminal:
+            self.dead = True
+
 
     def update_preferences(self, key: str, value: str):
         """Updates the user's preferences."""

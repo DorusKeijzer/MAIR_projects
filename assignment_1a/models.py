@@ -1,3 +1,5 @@
+# models.py
+
 from sklearn.base import BaseEstimator
 from joblib import dump, load
 import numpy as np
@@ -6,7 +8,7 @@ from keras.layers import Dense
 from keras.models import Sequential
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-from .read_data import (
+from read_data import (
     train_data_bow, train_label, dedup_train_data_bow, unique_train_labels,
     train_sentences, test_sentences, vectorizer, OOV_INDEX, handle_oov
 )
@@ -16,9 +18,9 @@ from abc import ABC, abstractmethod
 import warnings
 import os
 
+# Suppress TensorFlow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 warnings.filterwarnings('ignore')
-
 
 class Model(ABC):
     """All models inherit from this class so we have a uniform way of calling them. Models implement __init__ and a predict function."""
@@ -33,7 +35,6 @@ class Model(ABC):
     def predict(self, sentence: str) -> str:
         pass
 
-
 class RuleBasedModel(Model):
     """Classifies sentences based on keyword matching for each dialog act."""
 
@@ -46,7 +47,7 @@ class RuleBasedModel(Model):
             "thankyou": ["thank you", "thanks", "much appreciated", "thank you goodbye", "thank you and goodbye", "goodbye"],
             "affirm": ["yes", "right", "correct", "absolutely", "sure", "yeah", "definitely", "indeed", "of course"],
             "negate": ["no", "not", "never", "nope", "wrong", "incorrect"],
-            "request": ["could", "can", "what", "where", "how", "phone number", "address", "postcode", "location", "tell me", "type of", "phone", "i need", "please provide", "may I have", "would you", "could you", "is there a", "is this", "what is", "where is", "can you", "would you be able to"],
+            "request": ["could", "can", "what", "where", "how", "phone number", "address", "postcode", "location", "tell me", "type of", "phone", "i need", "please provide", "may I have", "would I", "could you", "is there a", "is this", "what is", "where is", "can you", "would you be able to"],
             "reqmore": ["more", "another", "else", "something else", "additional", "extra"],
             "reqalts": ["how about", "alternative", "else", "another", "other options", "instead", "alternatively", "other choices", "what about"],
             "inform": ["restaurant", "place", "serves", "food", "looking for", "price", "offers", "menu", "type", "part", "town", "moderately", "cheap", "north", "south", "chinese", "provides", "serves", "location", "situated", "found", "available", "details", "info", "information", "can you tell me"],
@@ -63,11 +64,10 @@ class RuleBasedModel(Model):
         # Check each dialog act with word boundaries
         for dialog_act, keywords in self.rules.items():
             for keyword in keywords:
-                if re.search(r'\b' + re.escape(keyword) + r'\b', sentence):
+                if re.search(r'\b' + re.escape(keyword) + r'\b', sentence, re.IGNORECASE):
                     return dialog_act
 
         return "inform"  # Fallback to "inform" if no keywords match
-
 
 class MajorityClassModel(Model):
     """Calculates the majority class upon initialization and always predicts this class when predicting."""
@@ -81,28 +81,33 @@ class MajorityClassModel(Model):
     def predict(self, sentence: str):
         return self.majority_class
 
-
 class ScikitModel(Model):
     """Base class for models using scikit-learn classifiers."""
 
-    def __init__(self, data, labels, model: BaseEstimator, name: str):
+    def __init__(self, data, labels, model: BaseEstimator, name: str, data_type='normal'):
         super().__init__(data, labels)
         self.name = name
         self.model = model
+        self.data_type = data_type  # Add this attribute
+        # Adjust weights_path to include data_type
+        self.weights_path = os.path.join(
+            "MAIR_projects", "assignment_1a", "model_weights",
+            f"{self.name.lower().replace(' ', '_')}_{self.data_type}.joblib"
+        )
 
     def train(self):
         self.model.fit(self.data, self.labels)
 
     def save_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{self.name.lower().replace(' ','_')}.joblib"
+            path = self.weights_path
         print(f"Saving weights to {path}")
         dump(self.model, path)
 
     def load_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{self.name.lower().replace(' ','_')}.joblib"
-        print(f"loading {path}")
+            path = self.weights_path
+        print(f"Loading weights from {path}")
         self.model = load(path)
 
     def predict(self, sentence: str) -> str:
@@ -111,37 +116,40 @@ class ScikitModel(Model):
         # Predict the label using the model
         return self.model.predict(sentence_bow)[0]
 
-
 class DecisionTreeModel(ScikitModel):
     """Decision Tree classifier based on bag-of-words features."""
 
-    def __init__(self, data, labels):
-        super().__init__(data, labels, model=DecisionTreeClassifier(), name="Decision Tree model")
-
+    def __init__(self, data, labels, data_type='normal'):
+        super().__init__(data, labels, model=DecisionTreeClassifier(), name="Decision Tree model", data_type=data_type)
 
 class LogisticRegressionModel(ScikitModel):
     """Logistic Regression classifier based on bag-of-words features."""
 
-    def __init__(self, data, labels):
-        super().__init__(data, labels, model=LogisticRegression(
-            max_iter=200), name="Logistic Regression model")
-
+    def __init__(self, data, labels, data_type='normal'):
+        super().__init__(data, labels, model=LogisticRegression(max_iter=200), name="Logistic Regression model", data_type=data_type)
 
 class FeedForwardNNModel(Model):
     """Feed Forward Neural Network classifier based on bag-of-words features using Keras."""
 
-    def __init__(self, data, labels):
+    def __init__(self, data, labels, data_type='normal'):
         super().__init__(data, labels)
         self.name = "Feed Forward NN model"
+        self.data_type = data_type 
 
-        self.num_classes = len(set(labels))
+        self.num_classes = len(sorted(set(labels)))
         self.model = Sequential([
             Dense(100, activation='relu', input_shape=(data.shape[1],)),
             Dense(self.num_classes, activation='softmax')
         ])
         self.model.compile(
-            optimizer='adam', loss='categorical_crossentropy', metrics=['Accuracy'])
-
+            optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy']
+        )
+        
+        # Adjust weights_path to include data_type
+        self.weights_path = os.path.join(
+            "MAIR_projects", "assignment_1a", "model_weights",
+            f"{self.name.lower().replace(' ', '_')}_{self.data_type}.weights.h5"
+        )
         # Convert labels to categorical
         self.labels_categorical = to_categorical([self.label_to_index(
             label) for label in labels], num_classes=self.num_classes)
@@ -152,28 +160,34 @@ class FeedForwardNNModel(Model):
 
     def save_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{self.name.lower().replace(' ','_')}.weights.h5"
+            path = self.weights_path
+        print(f"Saving weights to {path}")
         self.model.save_weights(path)
 
     def load_weights(self, path=None):
         if path is None:
-            path = f"./model_weights/{self.name.lower().replace(' ','_')}.weights.h5"
-        print(f"Loading {path}")
+            path = self.weights_path
+        print(f"Loading weights from {path}")
         self.model.load_weights(path)
 
     def label_to_index(self, label):
-        return list(set(train_label)).index(label)
+        return list(sorted(set(self.labels))).index(label)
 
     def index_to_label(self, index):
-        return list(set(train_label))[index]
+        return list(sorted(set(self.labels)))[index]
 
     def predict(self, sentence: str):
         # Convert the raw sentence to a bag-of-words feature vector and handle OOV
         sentence_bow = vectorizer.transform([sentence])
-        prediction = self.model.predict(sentence_bow.toarray(), verbose=0)[
-            0]  # Suppress output here
+        prediction = self.model.predict(sentence_bow.toarray(), verbose=0)[0]  # Suppress output here
         return self.index_to_label(np.argmax(prediction))
 
+    def predict_batch(self, sentences: list):
+        """Predict labels for a batch of sentences."""
+        sentence_bow = vectorizer.transform(sentences)
+        predictions = self.model.predict(sentence_bow.toarray(), verbose=0)
+        predicted_indices = np.argmax(predictions, axis=1)
+        return [self.index_to_label(idx) for idx in predicted_indices]
 
 if __name__ == "__main__":
     # Initialize the models with training data
