@@ -21,6 +21,8 @@ def add_new_properties(input_csv, output_csv):
     print(f"New properties added to {output_csv}")
 
 if __name__ == '__main__':
-    input_csv = os.path.join("MAIR_projects/assignment_1b/data/restaurant_info.csv")
-    output_csv = os.path.join("MAIR_projects/data/restaurant_info_extended.csv")
+    print(os.listdir())
+    print(os.getcwd())
+    input_csv = os.path.join( "./assignment_1b/data/restaurant_info.csv")
+    output_csv = os.path.join("./data/restaurant_info_extended.csv")
     add_new_properties(input_csv, output_csv)
