@@ -4,7 +4,7 @@ from assignment_1a.read_data import train_data_bow, train_label
 from assignment_1a.models import DecisionTreeModel
 from assignment_1b.extract_preferences import PreferenceExtractor
 from assignment_1b.lookup_restaurant import RestaurantLookup
-import assignment_1c.config
+import assignment_0c.config
 
 # Initialize the dialogue system components
 preference_extractor = PreferenceExtractor()
@@ -14,7 +14,7 @@ tm = None  # Will be initialized later
 
 def initialize_states():
     # Terminal state
-    goodbye = State("11. Goodbye", terminal=True)
+    goodbye = State("12. Goodbye", terminal=True)
 
     # Suggest restaurant state
     suggest = State("5. Suggest restaurant")
@@ -25,7 +25,7 @@ def initialize_states():
     suggest.make_suggestion = True
 
     # Additional requirements state
-    ask_additional_requirements = State("12. Ask additional requirements",
+    ask_additional_requirements = State("11. Ask additional requirements",
                                         transitions={
                                             "inform": ([], suggest)
                                         })
@@ -188,7 +188,7 @@ def process_user_input(user_input, tm, preference_extractor, model, restaurant_l
         tm.candidate_restaurants = restaurant_lookup.get_candidates(
             tm.preferences)
         # Transition to 'ask_additional_requirements' without user input
-        tm.set_state("12. Ask additional requirements")
+        tm.set_state("11. Ask additional requirements")
         tm.speak()
         return  # Return here to prevent further code execution
 
@@ -223,7 +223,7 @@ def make_suggestion(tm, restaurant_lookup):
             output = output.upper()
         print(output)
         # Transition to goodbye state
-        tm.set_state("11. Goodbye")
+        tm.set_state("12. Goodbye")
         tm.speak()
 
 
