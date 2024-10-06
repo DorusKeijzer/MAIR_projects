@@ -91,7 +91,7 @@ class ScikitModel(Model):
         self.data_type = data_type  # Add this attribute
         # Adjust weights_path to include data_type
         self.weights_path = os.path.join(
-            "MAIR_projects", "assignment_1a", "model_weights",
+            ".", "assignment_1a", "model_weights",
             f"{self.name.lower().replace(' ', '_')}_{self.data_type}.joblib"
         )
 
@@ -109,7 +109,7 @@ class ScikitModel(Model):
             path = self.weights_path
         print(f"Loading weights from {path}")
         #self.model = load(path)
-        self.model = load('C:\\Users\\Daan Westland\\OneDrive - Universiteit Utrecht\\methods in AI Research\\Programming assignments\\Project 1\\MAIR_projects\\assignment_1a\\model_weights\\decision_tree_model_normal.joblib')
+        self.model = load( os.path.join("./assignment_1a/model_weights/decision_tree_model_normal.joblib"))
 
     def predict(self, sentence: str) -> str:
         # Convert the raw sentence to a bag-of-words feature vector
@@ -148,7 +148,7 @@ class FeedForwardNNModel(Model):
         
         # Adjust weights_path to include data_type
         self.weights_path = os.path.join(
-            "MAIR_projects", "assignment_1a", "model_weights",
+            ".", "assignment_1a", "model_weights",
             f"{self.name.lower().replace(' ', '_')}_{self.data_type}.weights.h5"
         )
         # Convert labels to categorical

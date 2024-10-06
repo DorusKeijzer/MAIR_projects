@@ -8,7 +8,7 @@ class RestaurantLookup:
     def __init__(self, csv_path=None):
         if csv_path is None:
             csv_path = os.path.join(
-                os.getcwd(),"MAIR_projects\\" "data", "restaurant_info_extended.csv")
+                os.getcwd(),"data", "restaurant_info_extended.csv")
         self.restaurant_data = pd.read_csv(csv_path)
         self.inference_engine = InferenceEngine(rules)
 
