@@ -5,6 +5,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import nltk
 import Levenshtein as lev
+from typing import Tuple, Dict, Any
 
 # Ensure the stopwords corpus is downloaded
 nltk.download('stopwords', quiet=True)
@@ -188,7 +189,13 @@ class PreferenceExtractor:
                 fallbacks.append(food)
         return fallbacks
 
-    def extract_additional_requirements(self, user_input: str) -> dict:
+    from typing import Tuple, Dict, Any
+
+    def extract_additional_requirements(self, user_input: str) -> Tuple[Dict[str, Any], Any]:
+        """
+        Extracts additional requirements from the user input.
+        Returns a tuple: (additional_requirements_dict, additional_info)
+        """
         user_input = user_input.lower()
         additional_requirements = {}
 
@@ -199,4 +206,5 @@ class PreferenceExtractor:
             if keyword in words_set:
                 additional_requirements[keyword] = True
 
-        return additional_requirements
+        # Always return a tuple to prevent unpacking errors
+        return (additional_requirements, None)

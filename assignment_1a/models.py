@@ -8,7 +8,7 @@ from keras.layers import Dense
 from keras.models import Sequential
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-from read_data import (
+from assignment_1a.read_data import (
     train_data_bow, train_label, dedup_train_data_bow, unique_train_labels,
     train_sentences, test_sentences, vectorizer, OOV_INDEX, handle_oov
 )
@@ -108,7 +108,8 @@ class ScikitModel(Model):
         if path is None:
             path = self.weights_path
         print(f"Loading weights from {path}")
-        self.model = load(path)
+        #self.model = load(path)
+        self.model = load('C:\\Users\\Daan Westland\\OneDrive - Universiteit Utrecht\\methods in AI Research\\Programming assignments\\Project 1\\MAIR_projects\\assignment_1a\\model_weights\\decision_tree_model_normal.joblib')
 
     def predict(self, sentence: str) -> str:
         # Convert the raw sentence to a bag-of-words feature vector

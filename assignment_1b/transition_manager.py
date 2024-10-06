@@ -1,6 +1,7 @@
+# assignment_1b/transition_manager.py
+
 import pyttsx3
 import assignment_1c.config
-
 
 class State:
     """Keeps track of one state and the states it transitions to."""
@@ -18,9 +19,7 @@ class State:
         self.transitions = transitions
         self.terminal = terminal  # True for the final node
         self.prompt = ""  # The question the agent will ask in this state
-        # Allows agent to skip questions that might have already been answered
         self.optional = optional
-        self.make_suggestion = False  # Whether the agent should make a suggestion here
 
     def __repr__(self) -> str:
         return self.name
@@ -49,17 +48,24 @@ class TransitionManager:
         self.dead = False  # Will become True if agent reaches a terminal state
         self.tts_engine = pyttsx3.init()
 
+        self.pending_pref_key = None
+        self.pending_pref_value = None
+
     def speak(self):
         """The agent says the prompt associated with the current state."""
         output = self.current_state.prompt
-        if assignment_1c.config.all_caps:
+        if self.current_state.name == "Confirmation":
+            # Dynamic prompts are set in DialogueManager before calling speak()
+            output = self.current_state.prompt
+        if assignment_1c.config.all_caps and self.current_state.name != "Confirmation":
             output = output.upper()
-        print(output)
-        if assignment_1c.config.text_to_speech:
-            self.tts_engine.say(output)
-            self.tts_engine.runAndWait()
+        if output:
+            print(output)
+            if assignment_1c.config.text_to_speech:
+                self.tts_engine.say(output)
+                self.tts_engine.runAndWait()
 
-    def set_state(self, state):
+    def set_state(self, state, prompt=None):
         """Sets the current state to one of the valid states."""
         if isinstance(state, str):
             # Find the state with the given name
@@ -70,30 +76,48 @@ class TransitionManager:
         if state not in self.states:
             raise Exception(f"{state} is not a valid state")
         self.current_state = state
-        # Add this block to handle terminal states
+        # If a prompt is provided (for Confirmation), set it
+        if prompt:
+            self.current_state.prompt = prompt
+        # Set terminal flag if the current state is terminal
         if self.current_state.terminal:
             self.dead = True
-
 
     def update_preferences(self, key: str, value: str):
         """Updates the user's preferences."""
         if key not in self.preferences.keys():
             raise KeyError(
                 "Key must be 'food_type', 'price_range', or 'location'")
+        
+        # Check if preference change is allowed
+        if not assignment_1c.config.allow_preference_change and self.preferences[key] is not None:
+            message = f"Preference for {key.replace('_', ' ')} is already set and cannot be changed."
+            if assignment_1c.config.all_caps:
+                message = message.upper()
+            print(message)
+            if assignment_1c.config.text_to_speech:
+                self.tts_engine.say(message)
+                self.tts_engine.runAndWait()
+            return  # Do not update the preference if it's already set and changes are not allowed
+        
         self.preferences[key] = value
 
     def transition(self, dialogue_act):
         """Transitions to the next state based on the dialogue act and conditions."""
         if dialogue_act not in self.current_state.transitions.keys():
-            print("I'm sorry, I don't understand. Could you please rephrase?")
+            # Handle unexpected dialogue acts gracefully
+            clarification = "I'm sorry, I didn't understand that. Could you please clarify?"
+            if assignment_1c.config.all_caps:
+                clarification = clarification.upper()
+            print(clarification)
+            if assignment_1c.config.text_to_speech:
+                self.tts_engine.say(clarification)
+                self.tts_engine.runAndWait()
             return False
         conditions, new_state = self.current_state.transitions[dialogue_act]
 
         if self._conditions_met(conditions):
             self.set_state(new_state)
-            # Attempts to bypass the current state if conditions are already met
-            while self._bypass_state():
-                pass
             # Sets dead to True if the current state is terminal
             if self.current_state.terminal:
                 self.dead = True
@@ -106,15 +130,6 @@ class TransitionManager:
             if self.preferences.get(condition) is None:
                 return False
         return True
-
-    def _bypass_state(self):
-        """Bypasses optional states if conditions are already met."""
-        for dialogue_act in self.current_state.transitions.keys():
-            conditions, next_state = self.current_state.transitions[dialogue_act]
-            if self.current_state.optional and self._conditions_met(conditions):
-                self.set_state(next_state)
-                return True
-        return False
 
     def __repr__(self):
         return self.current_state.name if self.current_state else "No current state"
