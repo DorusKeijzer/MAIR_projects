@@ -17,13 +17,13 @@ class RestaurantLookup:
         filtered_data = self.restaurant_data.copy()
         filtered_data = self._filter_by_price(
             filtered_data, preferences.get('price_range'))
-        print(f"Total restaurants after price filter: {len(filtered_data)}")
+        #print(f"Total restaurants after price filter: {len(filtered_data)}")
         filtered_data = self._filter_by_location(
             filtered_data, preferences.get('location'))
-        print(f"Total restaurants after location filter: {len(filtered_data)}")
+        #print(f"Total restaurants after location filter: {len(filtered_data)}")
         filtered_data = self._filter_by_food_type(
             filtered_data, preferences.get('food_type'))
-        print(f"Total restaurants after food type filter: {len(filtered_data)}")
+        #print(f"Total restaurants after food type filter: {len(filtered_data)}")
 
         if filtered_data.empty:
             return pd.DataFrame()  # Return empty DataFrame if no candidates found
@@ -50,9 +50,9 @@ class RestaurantLookup:
                 known_properties)
 
             # Debug statements
-            print(f"Restaurant: {restaurant['restaurantname']}")
-            print(f"Inferred: {inferred}")
-            print(f"Explanations: {explanations}")
+            #print(f"Restaurant: {restaurant['restaurantname']}")
+            #print(f"Inferred: {inferred}")
+            #print(f"Explanations: {explanations}")
 
             # Check if restaurant meets additional requirements
             meets_requirements = True
@@ -67,7 +67,7 @@ class RestaurantLookup:
                 restaurant['inferred'] = inferred
                 restaurant['explanations'] = explanations
                 matching_restaurants.append(restaurant)
-        print(f"Number of matching restaurants: {len(matching_restaurants)}")
+        #print(f"Number of matching restaurants: {len(matching_restaurants)}")
 
         if not matching_restaurants:
             return "No matching restaurants found with your additional requirements"

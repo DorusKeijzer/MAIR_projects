@@ -12,9 +12,7 @@ all_caps = False
 ask_preference_confirmation = False
 
 # Use formal or informal language in system utterances
-use_formal_language = False
+use_formal_language = True
 
-# Allow users to change their preferences during the dialogue
-allow_preference_change = True
 
-text_to_speech = True
+text_to_speech = False
