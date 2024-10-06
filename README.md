@@ -1,6 +1,4 @@
-for assignment 1a, see the readme inside of `1a/`
-
-For the main program install dependencies and run main.py:
+To run the program, install dependencies and run main.py from the root directory:
 
 ```bash
 pip install -r requirements.txt
