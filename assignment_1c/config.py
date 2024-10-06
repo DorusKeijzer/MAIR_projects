@@ -14,5 +14,6 @@ ask_preference_confirmation = False
 # Use formal or informal language in system utterances
 use_formal_language = True
 
+allow_preference_change = True
 
 text_to_speech = False
