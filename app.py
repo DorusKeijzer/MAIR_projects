@@ -1,14 +1,15 @@
 import os
 from flask import Flask, request, jsonify, render_template
 from main import initialize_states, PreferenceExtractor, RestaurantLookup, DecisionTreeModel, DialogueManager
-
+from assignment_1a.read_data import train_data_bow, train_label
 app = Flask(__name__)
 
 # Global variable to hold dialogue managers per user
 dialogue_managers = {}
+
 @app.route('/')
 def index():
-    return render_template('index.html')  
+    return render_template('index.html')
 
 # Initialization of various components
 def create_dialogue_manager():
@@ -25,44 +26,45 @@ def create_dialogue_manager():
     dialogue_manager = DialogueManager(tm, preference_extractor, model, restaurant_lookup)
     return dialogue_manager
 
+
 @app.route('/start', methods=['POST'])
 def start_conversation():
-    """Initialize a new conversation and get the initial response."""
-    # Identify user (in practice, you would have user authentication or session)
-    user_id = 'default_user'  # Static for now; can be extended with user authentication
-
-    # Initialize a new dialogue manager for the user
+    """Start a new conversation."""
+    print("starting a new conversation")
+    user_id = 'default_user'  # In practice, this should be more dynamic
     if user_id not in dialogue_managers:
+        # Initialize a new DialogueManager for this user
         dialogue_managers[user_id] = create_dialogue_manager()
+    
+    # Start the conversation
+    response = dialogue_managers[user_id].start_conversation()
 
-    # Start the conversation and get the initial message
-    dialogue_manager = dialogue_managers[user_id]
-    response = dialogue_manager.start_conversation()
-
-    # Return the initial response from the bot
-    return jsonify({"response": response})
+    return jsonify({"response": response, "conversationStarted": True})
 
 @app.route('/chat', methods=['POST'])
 def chat():
     """Continue the conversation based on the user's input."""
+    print("continuing conversation")
     # Get the user input from the request
     data = request.get_json()
-    user_input = data.get('message', None)
+    user_input = data.get('message', '')
+    
     # Identify user (in practice, this should be more dynamic)
     user_id = 'default_user'
-
+    
     # Retrieve the dialogue manager for this user
     if user_id not in dialogue_managers:
         return jsonify({"error": "Conversation not started"}), 400
-
+    
     dialogue_manager = dialogue_managers[user_id]
-
+    
     # Process the user input and get the next response
-    response = dialogue_manager.start_conversation(user_input)
-
+    response = dialogue_manager.continue_conversation(user_input)
+    
     # Return the bot's next response
-    return jsonify({"response": response})
+    return jsonify({"response": response, "conversationStarted": True})
 
 if __name__ == '__main__':
+    print("test")
     app.run(host='0.0.0.0', port=5000, debug=True)
 

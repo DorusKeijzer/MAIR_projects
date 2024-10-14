@@ -9,8 +9,8 @@
 <body>
     <div class="messages" id="messages"></div>
     <div class="input-container">
-        <input type="text" class="user-input" id="userInput" placeholder="Type your message here...">
-        <button class="submit-btn" onclick="sendMessage()">Send</button>
+        <input type="text" class="user-input" id="user-input" placeholder="Type your message here..."> <!-- Updated ID -->
+        <button class="submit-btn" id="send-button" onclick="sendMessage()">Send</button> <!-- Added ID -->
     </div>
   
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
