@@ -64,6 +64,7 @@ class TransitionManager:
             if assignment_1c.config.text_to_speech:
                 self.tts_engine.say(output)
                 self.tts_engine.runAndWait()
+            return output
 
     def set_state(self, state, prompt=None):
         """Sets the current state to one of the valid states."""

@@ -39,7 +39,7 @@ def start_conversation():
     # Start the conversation
     response = dialogue_managers[user_id].start_conversation()
 
-    return jsonify({"response": response, "conversationStarted": True})
+    return jsonify({"response": "Hello! What kind of restaurant are you looking for?", "conversationStarted": True})
 
 @app.route('/chat', methods=['POST'])
 def chat():

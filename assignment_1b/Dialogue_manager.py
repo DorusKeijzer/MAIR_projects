@@ -36,11 +36,6 @@ class DialogueManager:
         response = self.tm.speak()
         return {"response": response}
 
-    def continue_conversation(self, user_input):
-        if not self.tm.dead and not self.tm.current_state.terminal:
-            self.process_input(user_input)
-            return self.tm.speak()
-        return "Conversation ended."
 
     def process_input(self, user_input: str):
         """Process user input and handle transitions between states."""
