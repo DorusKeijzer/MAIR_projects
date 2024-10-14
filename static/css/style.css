@@ -1,0 +1,43 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+}
+
+.messages {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    height: 300px; /* Set a fixed height for the chat box */
+    overflow-y: auto; /* Allow scrolling for overflow content */
+    margin-bottom: 10px; /* Space between chat box and input area */
+}
+
+.input-container {
+    display: flex;
+    justify-content: space-between; /* Align input and button properly */
+}
+
+.user-input {
+    flex: 1; /* Allow input field to take available space */
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-right: 10px; /* Space between input field and button */
+}
+
+.submit-btn {
+    padding: 10px 15px;
+    background-color: #007BFF; /* Bootstrap primary color */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.submit-btn:hover {
+    background-color: #0056b3; /* Darker shade on hover */
+}
+

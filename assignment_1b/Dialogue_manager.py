@@ -5,6 +5,8 @@ from assignment_1b.extract_preferences import PreferenceExtractor
 from assignment_1a.models import DecisionTreeModel
 from assignment_1b.lookup_restaurant import RestaurantLookup
 
+def process_input(user_input):
+    return f"Echo: {user_input}"
 
 class DialogueManager:
     def __init__(self, tm: TransitionManager, preference_extractor: PreferenceExtractor, model: DecisionTreeModel, restaurant_lookup: RestaurantLookup):
@@ -13,25 +15,46 @@ class DialogueManager:
         self.model = model
         self.restaurant_lookup = restaurant_lookup
 
-    def start_conversation(self):
+    def start_conversation(self, user_input=None):
         """Start the conversation and manage the dialogue flow iteratively."""
         # Speak the initial state prompt
-        self.tm.speak()
-
+        print("conversation started")
+        response = self.tm.speak()
+        print(user_input)
+        # Keep looping as long as the conversation isn't over
         while not self.tm.dead:
             # If the current state is terminal, break the loop
             if self.tm.current_state.terminal:
                 break
-
-            # Determine if user input is expected
+            # Determine if user input is expected for this state
             state_name = self.tm.current_state.name
+            print(state_name)
             if state_name not in ['5. Collect Candidates', '7. Suggest Restaurant', '8. Reply Additional Information', '9. Goodbye']:
-                user_input = input("Your answer: ").strip()
-            else:
-                user_input = None  # No user input expected in these states
+                # Process user input if provided via the API
+                if user_input is None:
+                    # This will be handled by the frontend. No need for input() in the API context.
+                    response = "Waiting for input"
+                else:
+                    # Process the user input and manage transitions
+                    process_input(user_input)
+                    response = self.tm.speak()  # Get next response based on input
 
-            # Process the user input and manage transitions
+            else:
+                # No user input expected, proceed to the next state
+                process_input(None)
+                response = self.tm.speak()  # Get next response when no input is expected
+
+            # Break if terminal state is reached
+            if self.tm.current_state.terminal:
+                break
+        print(response)
+        return response
+
+    def continue_conversation(self, user_input):
+        if not self.tm.dead and not self.tm.current_state.terminal:
             self.process_input(user_input)
+            return self.tm.speak()
+        return "Conversation ended."
 
     def process_input(self, user_input: str):
         """Process user input and handle transitions between states."""

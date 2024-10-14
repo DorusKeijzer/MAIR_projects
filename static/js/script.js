@@ -1,10 +1,25 @@
+
+function startConversation() {
+  // Start the conversation and get the initial message
+  fetch('/start', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    appendMessage('Bot', data.response);
+  });
+}
+
 function sendMessage() {
   const input = document.getElementById('userInput').value;
   if (input.trim() !== "") {
     appendMessage('You', input);
 
     // Send input to backend
-    fetch('/cli', {
+    fetch('/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -27,6 +42,6 @@ function appendMessage(sender, message) {
   newMessage.className = 'message';
   newMessage.innerHTML = `<strong>${sender}:</strong> ${message}`;
   messagesDiv.appendChild(newMessage);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto scroll to bottom
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;  // Auto scroll to the bottom
 }
 
