@@ -9,7 +9,7 @@ levenshtein = True
 all_caps = False
 
 # Ask for confirmation after extracting each preference
-ask_preference_confirmation = False
+ask_preference_confirmation = True
 
 # Use formal or informal language in system utterances
 use_formal_language = True

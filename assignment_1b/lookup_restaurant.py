@@ -81,20 +81,44 @@ class RestaurantLookup:
         }
 
     def generate_reasoning(self, selected_restaurant_data: dict, additional_requirements: dict) -> str:
-        reasoning = ""
+        reasoning = []
+        restaurant = selected_restaurant_data['restaurant']
         inferred_props = selected_restaurant_data.get('inferred', {})
         explanations = selected_restaurant_data.get('explanations', {})
-        for req in additional_requirements:
+
+        # Add reasoning for primary preferences
+        if 'food' in restaurant:
+            reasoning.append(f"it offers {restaurant['food']} cuisine")
+        if 'area' in restaurant:
+            reasoning.append(f"it's located in the {restaurant['area']} area")
+        if 'pricerange' in restaurant:
+            reasoning.append(f"it has {restaurant['pricerange']} prices")
+
+        # Add reasoning for additional requirements
+        for req, value in additional_requirements.items():
             if req in inferred_props:
-                value = inferred_props[req]
-                if value == 'contradictory':
-                    reasoning += f"The property '{req}' has contradictory inferences.\n"
-                elif value is True:
-                    explanation = explanations.get(req, f"The restaurant is {req} based on our inference rules.")
-                    reasoning += explanation + "\n"
-                elif value is False:
-                    reasoning += f"The restaurant is not {req} based on our inference rules.\n"
-        return reasoning.strip()
+                if inferred_props[req] == value:
+                    explanation = explanations.get(req, f"it is {req}")
+                    if req == 'touristic':
+                        reasoning.append(f"it's popular among tourists because {explanation.lower()}")
+                    elif req == 'romantic':
+                        reasoning.append(f"it has a romantic atmosphere because {explanation.lower()}")
+                    elif req == 'children':
+                        reasoning.append(f"it's suitable for children because {explanation.lower()}")
+                    elif req == 'assigned_seats':
+                        reasoning.append(f"it has assigned seating because {explanation.lower()}")
+                    else:
+                        reasoning.append(f"it is {req} because {explanation.lower()}")
+                else:
+                    reasoning.append(f"however, it might not be {req}")
+
+        # Combine reasons
+        if len(reasoning) > 1:
+            reasoning_str = ", ".join(reasoning[:-1]) + f", and {reasoning[-1]}"
+        else:
+            reasoning_str = reasoning[0] if reasoning else ""
+
+        return reasoning_str.capitalize() + "."
 
     # Filtering methods
     def _filter_by_price(self, data: pd.DataFrame, price_range: str) -> pd.DataFrame:
