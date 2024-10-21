@@ -1,15 +1,28 @@
 import os
-from flask import Flask, request, jsonify, render_template, session
+import uuid
+from flask import Flask, session, jsonify, render_template
+from flask_session import Session
+import redis
 from dotenv import load_dotenv
 from main import initialize_states, PreferenceExtractor, RestaurantLookup, DecisionTreeModel, DialogueManager
 from assignment_1a.read_data import train_data_bow, train_label
-import uuid
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY')  # Load secret key from .env
+
+# Configure Redis for session management
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = True
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'myapp_'
+app.config['SESSION_REDIS'] = redis.StrictRedis(host='localhost', port=6379, db=0)  # Adjust host/port as necessary
+app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minutes
+
+# Initialize the session extension
+Session(app)
 
 @app.route('/')
 def index():
@@ -36,15 +49,18 @@ def start_conversation():
     print("starting a new conversation")
     user_id = str(uuid.uuid4())  # Generate a unique user ID
     session['user_id'] = user_id  # Store the user ID in the session 
-    # Initialize a new DialogueManager for the session
-    session['dialogue_manager'] = create_dialogue_manager()  # Store the dialogue manager in session
-    
-    # Start the conversation
-    dialogue_manager = session['dialogue_manager']
-    dialogue_manager.start_conversation()
-    messages = dialogue_manager.get_messages()
 
-    return jsonify({"messages": messages, "conversationStarted": True})
+    # Initialize a new DialogueManager and store it directly in the session
+    dialogue_manager = create_dialogue_manager()
+    
+    # Store the dialogue manager's state in the session
+    session['dialogue_manager'] = dialogue_manager.to_dict()  # Use to_dict() for serialization
+
+    # Start the conversation
+    dialogue_manager.start_conversation()
+    data = dialogue_manager.to_dict()
+
+    return jsonify({"data": data, "conversationStarted": True})
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -55,25 +71,27 @@ def chat():
     data = request.get_json()
     user_input = data.get('message', '')
     
-    # Retrieve the dialogue manager for this user from the session
+    # Retrieve the dialogue manager's state from the session
     if 'dialogue_manager' not in session:
         return jsonify({"error": "Conversation not started"}), 400
     
-    dialogue_manager = session['dialogue_manager']
-    
-    # Add user message to the dialogue manager
-    dialogue_manager.add_user_message(user_input)
+    dialogue_manager_state = session['dialogue_manager']
+    dialogue_manager = create_dialogue_manager()  # Create a new instance
+    dialogue_manager.from_dict(dialogue_manager_state)  # Restore the state from the session
     
     # Process the user input and get the next response
+    dialogue_manager.add_user_message(user_input)
     dialogue_manager.continue_conversation(user_input)
     
+    # Update the state in the session
+    session['dialogue_manager'] = dialogue_manager.to_dict()
+    
     # Get all messages from the dialogue manager
-    messages = dialogue_manager.get_messages()
+    data = dialogue_manager.to_dict()
     
     # Return all messages
-    return jsonify({"messages": messages, "conversationStarted": True})
+    return jsonify({"data": data, "conversationStarted": True})
 
 if __name__ == '__main__':
     print("Starting Flask app...")
     app.run(host='0.0.0.0', port=5000, debug=True)
-

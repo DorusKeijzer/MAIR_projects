@@ -15,6 +15,13 @@ class DialogueManager:
         self.conversation_started = False
         self.messages = []
 
+    # to serialize between sessions
+    def to_dict(self):
+        """Convert the DialogueManager's state to a dictionary for serialization."""
+        return {
+            "messages": self.messages,
+        }
+
     def start_conversation(self):
         """Start the conversation and return the initial message."""
         print("starting conversation")

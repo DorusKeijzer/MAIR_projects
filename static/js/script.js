@@ -1,3 +1,4 @@
+
 let conversationStarted = false;
 
 // Function to check and load conversation state from localStorage
@@ -12,6 +13,7 @@ function loadConversationState() {
 function saveConversationState() {
     localStorage.setItem('conversationState', JSON.stringify(conversationStarted));
 }
+
 function startConversation() {
     fetch('/start', {
         method: 'POST',
@@ -23,11 +25,16 @@ function startConversation() {
     .then(data => {
         console.log('Start conversation response:', data);
         conversationStarted = data.conversationStarted;
-        if (data.response) {
-            displayMessage('bot', data.response);
+        
+        // Display the messages from the initial response
+        if (data.data && Array.isArray(data.data.messages)) {
+            data.data.messages.forEach(message => {
+                displayMessage(message.sender, message.content); // Assuming messages are structured with sender and content
+            });
         } else {
             console.error('Unexpected response structure:', data);
         }
+        
         enableChatInput();
         saveConversationState();
     })
@@ -56,10 +63,14 @@ function sendMessage() {
     .then(response => response.json())
     .then(data => {
         console.log('Chat response:', data);
+        
+        // Handle the response
         if (data.error && !data.conversationStarted) {
             startConversation();
-        } else if (data.response) {
-            displayMessage('bot', data.response);
+        } else if (data.data && Array.isArray(data.data.messages)) {
+            data.data.messages.forEach(message => {
+                displayMessage(message.sender, message.content); // Assuming messages are structured with sender and content
+            });
         } else {
             console.error('Unexpected response structure:', data);
         }
@@ -77,12 +88,6 @@ function displayMessage(sender, message) {
 
     const messageElement = document.createElement('div');
     messageElement.classList.add(sender.toLowerCase());
-    
-    // Check if message is an object and has a 'response' property
-    if (typeof message === 'object' && message.response) {
-        message = message.response;
-    }
-    
     messageElement.textContent = `${sender}: ${message}`;
     chatBox.appendChild(messageElement);
 
