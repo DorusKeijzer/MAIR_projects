@@ -1,3 +1,4 @@
+
 import os
 import uuid
 import logging
@@ -5,6 +6,7 @@ from flask import Flask, jsonify, render_template, request
 from flask_session import Session
 from main import initialize_states, PreferenceExtractor, RestaurantLookup, DecisionTreeModel, DialogueManager
 from assignment_1a.read_data import train_data_bow, train_label
+import assignment_1c.config as config  # Import the config module
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -15,7 +17,7 @@ dialogue_managers = {}
 def index():
     return render_template('index.html')
 
-def create_dialogue_manager():
+def create_dialogue_manager(preference_confirmation=None):
     tm = initialize_states()
     preference_extractor = PreferenceExtractor()
     restaurant_lookup = RestaurantLookup()
@@ -24,6 +26,8 @@ def create_dialogue_manager():
     weights_path = os.path.join(os.getcwd(), "assignment_1a", "model_weights", "decision_tree_model_normal.joblib")
     model.load_weights(weights_path)
     
+    # Set the preference confirmation based on the argument
+    config.ask_preference_confirmation = preference_confirmation
     dialogue_manager = DialogueManager(tm, preference_extractor, model, restaurant_lookup)
     return dialogue_manager
 
@@ -97,6 +101,25 @@ def end_conversation():
         app.logger.error(f"No active conversation found for user ID: {user_id}")
         return jsonify({"error": "No active conversation found"}), 400
 
+@app.route('/<preference>/')
+def set_preference(preference):
+    """Route to set preference confirmation based on URL."""
+    if preference == 'no_pref':
+        config.ask_preference_confirmation = False
+    elif preference == 'yes_pref':
+        config.ask_preference_confirmation = True
+    else:
+        return jsonify({"error": "Invalid preference value"}), 400
+
+    # Start a new conversation with the set preference
+    user_id = str(uuid.uuid4())
+    dialogue_manager = create_dialogue_manager(config.ask_preference_confirmation)
+    dialogue_managers[user_id] = dialogue_manager
+    initial_message = dialogue_manager.start_conversation()
+    
+    return render_template('index.html', initial_message=initial_message, user_id=user_id)
+
 if __name__ == '__main__':
     app.logger.info("Starting Flask app...")
     app.run(host='0.0.0.0', port=5000, debug=True)
+
