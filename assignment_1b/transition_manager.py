@@ -28,28 +28,27 @@ class State:
 class TransitionManager:
     """Manages the state transitions and keeps track of the current state."""
 
-    def __init__(self, states, starting_state=None):
-        """
-        :param states: List of State objects.
-        :param starting_state: The initial state to start from.
-        """
-        self.preferences = {"food_type": None,
-                            "price_range": None, "location": None}
-        if not states:
-            raise Exception("States cannot be empty")
-        self.states = states
-
-        if starting_state is None:
-            self.current_state = self.states[0]
-        else:
-            self.current_state = starting_state
+    def __init__(self, states, initial_state):
+        self.states = {state.name: state for state in states}
+        self.current_state = initial_state
+        self.preferences = {}
         self.additional_requirements = {}
-        self.candidate_restaurants = []
-        self.dead = False  # Will become True if agent reaches a terminal state
+        self.candidate_restaurants = None
+        self.dead = False
         self.tts_engine = pyttsx3.init()
-
         self.pending_pref_key = None
         self.pending_pref_value = None
+        print(f"DEBUG: TransitionManager initialized with initial state: {initial_state.name}")
+
+    def set_state(self, state_name, prompt=None):
+        print(f"DEBUG: Attempting to set state to: {state_name}")
+        if state_name in self.states:
+            self.current_state = self.states[state_name]
+            if prompt:
+                self.current_state.prompt = prompt
+            print(f"DEBUG: State set to: {self.current_state.name}")
+        else:
+            print(f"DEBUG: Error - State {state_name} not found")
 
     def speak(self):
         """The agent says the prompt associated with the current state."""
@@ -66,42 +65,11 @@ class TransitionManager:
                 self.tts_engine.runAndWait()
             return output
 
-    def set_state(self, state, prompt=None):
-        """Sets the current state to one of the valid states."""
-        if isinstance(state, str):
-            # Find the state with the given name
-            matching_states = [s for s in self.states if s.name == state]
-            if not matching_states:
-                raise Exception(f"State '{state}' is not a valid state")
-            state = matching_states[0]
-        if state not in self.states:
-            raise Exception(f"{state} is not a valid state")
-        self.current_state = state
-        # If a prompt is provided (for Confirmation), set it
-        if prompt:
-            self.current_state.prompt = prompt
-        # Set terminal flag if the current state is terminal
-        if self.current_state.terminal:
-            self.dead = True
 
-    def update_preferences(self, key: str, value: str):
-        """Updates the user's preferences."""
-        if key not in self.preferences.keys():
-            raise KeyError(
-                "Key must be 'food_type', 'price_range', or 'location'")
-        
-        # Check if preference change is allowed
-        if not assignment_1c.config.allow_preference_change and self.preferences[key] is not None:
-            message = f"Preference for {key.replace('_', ' ')} is already set and cannot be changed."
-            if assignment_1c.config.all_caps:
-                message = message.upper()
-            print(message)
-            if assignment_1c.config.text_to_speech:
-                self.tts_engine.say(message)
-                self.tts_engine.runAndWait()
-            return  # Do not update the preference if it's already set and changes are not allowed
-        
+    def update_preferences(self, key, value):
+        print(f"DEBUG: Updating preferences - {key}: {value}")
         self.preferences[key] = value
+        print(f"DEBUG: Updated preferences: {self.preferences}")
 
     def transition(self, dialogue_act):
         """Transitions to the next state based on the dialogue act and conditions."""
@@ -118,7 +86,7 @@ class TransitionManager:
         conditions, new_state = self.current_state.transitions[dialogue_act]
 
         if self._conditions_met(conditions):
-            self.set_state(new_state)
+            self.set_state(new_state.name)
             # Sets dead to True if the current state is terminal
             if self.current_state.terminal:
                 self.dead = True

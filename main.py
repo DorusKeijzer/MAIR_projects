@@ -37,11 +37,8 @@ def initialize_states():
     suggest_restaurant = State("7. Suggest Restaurant")
     suggest_restaurant.prompt = "Here's a restaurant you might like based on what you told me." if not assignment_1c.config.use_formal_language else "Based on your preferences, I recommend the following restaurant."
 
-    reply_additional_info = State("8. Reply Additional Information")
-    reply_additional_info.prompt = "Here is more information about the restaurant." if not assignment_1c.config.use_formal_language else "Here are additional details about the restaurant."
-
     intermediate_state = State("10. Intermediate (Alternative) State")
-    intermediate_state.prompt = "Can I help you in any other way?" if assignment_1c.config.use_formal_language else "Can I help you in any other way?"
+    intermediate_state.prompt = "Would you like to see an alternative restaurant recommendation?" if assignment_1c.config.use_formal_language else "Want to see another restaurant option?"
 
     goodbye = State("9. Goodbye", terminal=True)
     goodbye.prompt = "Thanks for stopping by! Bye!" if not assignment_1c.config.use_formal_language else "Thank you for using our service. Have a pleasant day!"
@@ -90,18 +87,10 @@ def initialize_states():
         "askinfo": ([], "8. Reply Additional Information")
     }
 
-    # Reply Additional Information State
-    reply_additional_info.transitions = {
-        "done": ([], "10. Intermediate (Alternative) State")
-    }
-
-    # Intermediate State
+       # Intermediate State
     intermediate_state.transitions = {
-        "thankyou": ([], "9. Goodbye"),
-        "reqalts": ([], "7. Suggest Restaurant"),
-        "askinfo": ([], "8. Reply Additional Information"),
-        "affirm": ([], "6. Ask Additional Requirements"),
-        "deny": ([], "6. Ask Additional Requirements")
+        "affirm": ([], "10. Intermediate (Alternative) State"),
+        "deny": ([], "9. Goodbye")
     }
 
     # Create a list of all states
@@ -115,7 +104,6 @@ def initialize_states():
         collect_candidates,
         ask_additional_requirements,
         suggest_restaurant,
-        reply_additional_info,
         intermediate_state,
         goodbye
     ]
