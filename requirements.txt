@@ -3,9 +3,9 @@ flask_session==0.8.0
 joblib==1.4.2
 keras==3.5.0
 nltk==3.9.1
-numpy==2.1.2
+numpy
 pandas==2.2.3
-python_Levenshtein==0.25.1
-python_Levenshtein==0.26.0
+python_Levenshtein
 pyttsx3==2.98
 scikit_learn==1.5.2
+tensorflow==2.17.0
