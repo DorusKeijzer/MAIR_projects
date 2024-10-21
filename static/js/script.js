@@ -1,17 +1,26 @@
-
 let conversationStarted = false;
+let userId = null;
 
-// Function to check and load conversation state from localStorage
+document.addEventListener('DOMContentLoaded', (event) => {
+    loadConversationState();
+    // Start the conversation immediately
+    startConversation();
+});
+
 function loadConversationState() {
     const state = localStorage.getItem('conversationState');
     if (state) {
-        conversationStarted = JSON.parse(state);
+        const parsedState = JSON.parse(state);
+        conversationStarted = parsedState.conversationStarted;
+        userId = parsedState.userId;
     }
 }
 
-// Function to save conversation state to localStorage
 function saveConversationState() {
-    localStorage.setItem('conversationState', JSON.stringify(conversationStarted));
+    localStorage.setItem('conversationState', JSON.stringify({
+        conversationStarted,
+        userId
+    }));
 }
 
 function startConversation() {
@@ -25,11 +34,11 @@ function startConversation() {
     .then(data => {
         console.log('Start conversation response:', data);
         conversationStarted = data.conversationStarted;
+        userId = data.user_id;
         
-        // Display the messages from the initial response
         if (data.data && Array.isArray(data.data.messages)) {
             data.data.messages.forEach(message => {
-                displayMessage(message.sender, message.content); // Assuming messages are structured with sender and content
+                displayMessage(message.sender, message.content.response);
             });
         } else {
             console.error('Unexpected response structure:', data);
@@ -38,7 +47,7 @@ function startConversation() {
         enableChatInput();
         saveConversationState();
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => console.error('Error starting conversation:', error));
 }
 
 function sendMessage() {
@@ -48,34 +57,66 @@ function sendMessage() {
     displayMessage('user', userInput);
     document.getElementById('userInput').value = '';
 
-    if (!conversationStarted) {
-        startConversation();
-        return;
+    // If the conversation has already started, send the message directly
+    if (conversationStarted) {
+        sendChatMessage(userInput);
     }
+}
 
+function sendChatMessage(userInput) {
     fetch('/chat', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: userInput }),
+        body: JSON.stringify({ message: userInput, user_id: userId }),
     })
     .then(response => response.json())
     .then(data => {
         console.log('Chat response:', data);
         
-        // Handle the response
         if (data.error && !data.conversationStarted) {
             startConversation();
         } else if (data.data && Array.isArray(data.data.messages)) {
-            data.data.messages.forEach(message => {
-                displayMessage(message.sender, message.content); // Assuming messages are structured with sender and content
+            const newMessages = data.data.messages.slice(-2);
+            newMessages.forEach(message => {
+                if (message.sender !== 'user') {
+                    displayMessage(message.sender, message.content);
+                }
             });
         } else {
             console.error('Unexpected response structure:', data);
         }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => console.error('Error sending chat message:', error));
+}
+
+function resetConversation() {
+    conversationStarted = false;
+    userId = null;
+    document.getElementById('messages').innerHTML = '';
+    document.getElementById('userInput').disabled = true;
+    startConversation();
+    saveConversationState();
+}
+
+function endConversation() {
+    fetch('/end', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: userId }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('End conversation response:', data);
+        conversationStarted = false;
+        userId = null;
+        saveConversationState();
+        document.getElementById('userInput').disabled = true;
+    })
+    .catch(error => console.error('Error ending conversation:', error));
 }
 
 function displayMessage(sender, message) {
@@ -98,27 +139,4 @@ function enableChatInput() {
     document.getElementById('userInput').disabled = false;
 }
 
-// Function to reset the conversation state
-function resetConversation() {
-    conversationStarted = false; // Reset the conversation state
-    document.getElementById('messages').innerHTML = ''; // Clear chat messages
-    document.getElementById('userInput').disabled = true; // Disable input until conversation starts
-    startConversation(); // Start a new conversation
-    saveConversationState(); // Save the new state
-}
-
-// Function to end the conversation
-function endConversation() {
-    conversationStarted = false;
-    saveConversationState(); // Save the updated state
-    document.getElementById('userInput').disabled = true; // Disable the input
-}
-
-// Call this when the page loads
-document.addEventListener('DOMContentLoaded', (event) => {
-    loadConversationState(); // Load the conversation state when the page loads
-    if (conversationStarted) {
-        startConversation(); // Optionally restart conversation if state is true
-    }
-});
 
