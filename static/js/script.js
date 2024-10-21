@@ -23,7 +23,7 @@ function startConversation() {
     .then(response => response.json())
     .then(data => {
         conversationStarted = data.conversationStarted;
-        displayMessage(data.response, 'bot');
+        displayMessages(data.messages);
         enableChatInput();
         saveConversationState(); // Save state after starting conversation
     })
@@ -31,10 +31,9 @@ function startConversation() {
 }
 
 function sendMessage() {
-    const userInput = document.getElementById('userInput').value; // Ensure this matches the HTML
+    const userInput = document.getElementById('userInput').value;
     if (userInput.trim() === '') return;
 
-    displayMessage(userInput, 'user');
     document.getElementById('userInput').value = '';
 
     if (!conversationStarted) {
@@ -54,28 +53,33 @@ function sendMessage() {
         if (data.error && !data.conversationStarted) {
             startConversation();
         } else {
-            // Assuming 'data.response' contains the bot's reply
-            displayMessage(data.response.response || 'No response property in response', 'bot');
+            displayMessages(data.messages);
         }
     })
     .catch(error => console.error('Error:', error));
 }
-function displayMessage(message, sender) {
+
+function displayMessages(messages) {
     const chatBox = document.getElementById('messages');
     if (!chatBox) {
         console.error('Chat box element not found!');
         return;
     }
 
-    const messageElement = document.createElement('div');
-    messageElement.classList.add(sender);
-    messageElement.textContent = sender === 'bot' ? `bot: ${message}` : `user: ${message}`; // Prefix messages with sender type
-    chatBox.appendChild(messageElement);
+    chatBox.innerHTML = ''; // Clear existing messages
+
+    messages.forEach(([sender, message]) => {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add(sender);
+        messageElement.textContent = `${sender}: ${message}`;
+        chatBox.appendChild(messageElement);
+    });
+
     chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
 }
 
 function enableChatInput() {
-    document.getElementById('userInput').disabled = false; // Ensure this matches the HTML
+    document.getElementById('userInput').disabled = false;
 }
 
 // Function to reset the conversation state
