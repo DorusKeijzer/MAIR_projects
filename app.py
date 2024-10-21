@@ -1,17 +1,21 @@
 import os
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session
+from dotenv import load_dotenv
 from main import initialize_states, PreferenceExtractor, RestaurantLookup, DecisionTreeModel, DialogueManager
 from assignment_1a.read_data import train_data_bow, train_label
-app = Flask(__name__)
+import uuid
 
-# Global variable to hold dialogue managers per user
-dialogue_managers = {}
+# Load environment variables
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = os.getenv('FLASK_SECRET_KEY')  # Load secret key from .env
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# Initialization of various components
+# Function to create a new DialogueManager
 def create_dialogue_manager():
     tm = initialize_states()  # Initialize TransitionManager and states
     preference_extractor = PreferenceExtractor()  # Extract user preferences
@@ -26,45 +30,50 @@ def create_dialogue_manager():
     dialogue_manager = DialogueManager(tm, preference_extractor, model, restaurant_lookup)
     return dialogue_manager
 
-
 @app.route('/start', methods=['POST'])
 def start_conversation():
     """Start a new conversation."""
     print("starting a new conversation")
-    user_id = 'default_user'  # In practice, this should be more dynamic
-    if user_id not in dialogue_managers:
-        # Initialize a new DialogueManager for this user
-        dialogue_managers[user_id] = create_dialogue_manager()
+    user_id = str(uuid.uuid4())  # Generate a unique user ID
+    session['user_id'] = user_id  # Store the user ID in the session 
+    # Initialize a new DialogueManager for the session
+    session['dialogue_manager'] = create_dialogue_manager()  # Store the dialogue manager in session
     
     # Start the conversation
-    response = dialogue_managers[user_id].start_conversation()
+    dialogue_manager = session['dialogue_manager']
+    dialogue_manager.start_conversation()
+    messages = dialogue_manager.get_messages()
 
-    return jsonify({"response": "Hello! What kind of restaurant are you looking for?", "conversationStarted": True})
+    return jsonify({"messages": messages, "conversationStarted": True})
 
 @app.route('/chat', methods=['POST'])
 def chat():
     """Continue the conversation based on the user's input."""
     print("continuing conversation")
+    
     # Get the user input from the request
     data = request.get_json()
     user_input = data.get('message', '')
     
-    # Identify user (in practice, this should be more dynamic)
-    user_id = 'default_user'
-    
-    # Retrieve the dialogue manager for this user
-    if user_id not in dialogue_managers:
+    # Retrieve the dialogue manager for this user from the session
+    if 'dialogue_manager' not in session:
         return jsonify({"error": "Conversation not started"}), 400
     
-    dialogue_manager = dialogue_managers[user_id]
+    dialogue_manager = session['dialogue_manager']
+    
+    # Add user message to the dialogue manager
+    dialogue_manager.add_user_message(user_input)
     
     # Process the user input and get the next response
-    response = dialogue_manager.continue_conversation(user_input)
+    dialogue_manager.continue_conversation(user_input)
     
-    # Return the bot's next response
-    return jsonify({"response": response, "conversationStarted": True})
+    # Get all messages from the dialogue manager
+    messages = dialogue_manager.get_messages()
+    
+    # Return all messages
+    return jsonify({"messages": messages, "conversationStarted": True})
 
 if __name__ == '__main__':
-    print("test")
+    print("Starting Flask app...")
     app.run(host='0.0.0.0', port=5000, debug=True)
 
