@@ -13,6 +13,7 @@ class DialogueManager:
         self.model = model
         self.restaurant_lookup = restaurant_lookup
         self.conversation_started = False
+        self.messages = []
 
     def start_conversation(self):
         """Start the conversation and return the initial message."""
@@ -349,10 +350,21 @@ class DialogueManager:
     def output_message(self, message):
         if assignment_1c.config.all_caps:
             message = message.upper()
+        self.messages.append(("bot", message))  # Store the message
         print(message)
         if assignment_1c.config.text_to_speech:
             self.tm.tts_engine.say(message)
             self.tm.tts_engine.runAndWait()
+
+    def get_messages(self):
+        return self.messages
+
+    def add_user_message(self, message):
+        self.messages.append(("user", message))
+
+    def clear_messages(self):
+        self.messages = []
+
 
     def handle_goodbye(self):
         self.tm.set_state("9. Goodbye")
