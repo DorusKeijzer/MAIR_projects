@@ -1,3 +1,4 @@
+# Use the official Python image as the base image
 FROM python:3.12.5
 
 # Install system dependencies for TTS and Gunicorn
@@ -12,14 +13,8 @@ COPY . .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install NLTK punkt tokenizer
-RUN python -m nltk.downloader punkt
-
-# Optionally, download all NLTK resources (if needed)
-# RUN python -m nltk.downloader all
-
-# Install Gunicorn for production
-RUN pip install gunicorn
+# Download NLTK punkt tokenizer and set the NLTK data path
+RUN python -m nltk.downloader -d /usr/local/nltk_data punkt
 
 # Expose the port the app runs on
 EXPOSE 5000
