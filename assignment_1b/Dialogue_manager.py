@@ -21,13 +21,13 @@ class DialogueManager:
         if not self.conversation_started:
             self.conversation_started = True
             initial_response = self.tm.speak()
+            self.output_message(initial_response)
             return {"response": initial_response}
         else:
             return {"response": "Conversation already started."}
-
     def continue_conversation(self, user_input):
         """Continue the conversation based on user input."""
-        print("Continue the conversation based on user input.")
+        print(f"Continue the conversation based on user input: {user_input}")
         if not self.conversation_started:
             return {"response": "Conversation not started. Please start the conversation first."}
 
@@ -36,6 +36,7 @@ class DialogueManager:
 
         self.process_input(user_input)
         response = self.tm.speak()
+        self.output_message(response)
         return {"response": response}
 
     def process_input(self, user_input: str):
@@ -348,9 +349,11 @@ class DialogueManager:
         return message
 
     def output_message(self, message):
+        print("outputting message")
         if assignment_1c.config.all_caps:
             message = message.upper()
         self.messages.append(("bot", message))  # Store the message
+        print("self.messages:", self.messages)
         print(message)
         if assignment_1c.config.text_to_speech:
             self.tm.tts_engine.say(message)

@@ -12,7 +12,6 @@ function loadConversationState() {
 function saveConversationState() {
     localStorage.setItem('conversationState', JSON.stringify(conversationStarted));
 }
-
 function startConversation() {
     fetch('/start', {
         method: 'POST',
@@ -22,10 +21,15 @@ function startConversation() {
     })
     .then(response => response.json())
     .then(data => {
+        console.log('Start conversation response:', data);
         conversationStarted = data.conversationStarted;
-        displayMessages(data.messages);
+        if (data.response) {
+            displayMessage('bot', data.response);
+        } else {
+            console.error('Unexpected response structure:', data);
+        }
         enableChatInput();
-        saveConversationState(); // Save state after starting conversation
+        saveConversationState();
     })
     .catch(error => console.error('Error:', error));
 }
@@ -34,6 +38,7 @@ function sendMessage() {
     const userInput = document.getElementById('userInput').value;
     if (userInput.trim() === '') return;
 
+    displayMessage('user', userInput);
     document.getElementById('userInput').value = '';
 
     if (!conversationStarted) {
@@ -50,30 +55,36 @@ function sendMessage() {
     })
     .then(response => response.json())
     .then(data => {
+        console.log('Chat response:', data);
         if (data.error && !data.conversationStarted) {
             startConversation();
+        } else if (data.response) {
+            displayMessage('bot', data.response);
         } else {
-            displayMessages(data.messages);
+            console.error('Unexpected response structure:', data);
         }
     })
     .catch(error => console.error('Error:', error));
 }
 
-function displayMessages(messages) {
+function displayMessage(sender, message) {
+    console.log('Displaying message:', sender, message);
     const chatBox = document.getElementById('messages');
     if (!chatBox) {
         console.error('Chat box element not found!');
         return;
     }
 
-    chatBox.innerHTML = ''; // Clear existing messages
-
-    messages.forEach(([sender, message]) => {
-        const messageElement = document.createElement('div');
-        messageElement.classList.add(sender);
-        messageElement.textContent = `${sender}: ${message}`;
-        chatBox.appendChild(messageElement);
-    });
+    const messageElement = document.createElement('div');
+    messageElement.classList.add(sender.toLowerCase());
+    
+    // Check if message is an object and has a 'response' property
+    if (typeof message === 'object' && message.response) {
+        message = message.response;
+    }
+    
+    messageElement.textContent = `${sender}: ${message}`;
+    chatBox.appendChild(messageElement);
 
     chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
 }
