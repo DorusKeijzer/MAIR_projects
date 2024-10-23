@@ -12,15 +12,9 @@ class DialogueManager:
         self.preference_extractor = preference_extractor
         self.model = model
         self.restaurant_lookup = restaurant_lookup
-        self.conversation_started = False
-        self.messages = []
 
-    # to serialize between sessions
-    def to_dict(self):
-        """Convert the DialogueManager's state to a dictionary for serialization."""
-        return {
-            "messages": self.messages,
-        }
+        self.suggested_restaurants = set()
+        self.first_suggestion = True
 
     def start_conversation(self):
         """Start the conversation and return the initial message."""
@@ -76,7 +70,9 @@ class DialogueManager:
             self.handle_goodbye()
 
     def handle_post_welcome_transition(self, user_input: str):
+        print(f"DEBUG: Handling post-welcome transition. User input: {user_input}")
         extracted_prefs, _ = self.preference_extractor.extract_preferences(user_input)
+        print(f"DEBUG: Extracted preferences: {extracted_prefs}")
 
         if assignment_1c.config.ask_preference_confirmation:
             self.preferences_to_confirm = list(extracted_prefs.keys())
@@ -86,39 +82,84 @@ class DialogueManager:
             self.tm.preferences.update(extracted_prefs)
             self.move_to_next_state()
 
+        print(f"DEBUG: Current preferences after post-welcome: {self.tm.preferences}")
+
     def confirm_next_preference(self):
-        if self.preferences_to_confirm:
+        print(f"DEBUG: Entering confirm_next_preference. Preferences to confirm: {self.preferences_to_confirm}")
+        while self.preferences_to_confirm:
             pref_key = self.preferences_to_confirm.pop(0)
             pref_value = self.extracted_prefs[pref_key]
-            prompt = self.generate_confirmation_prompt(pref_key, pref_value)
-            self.tm.pending_pref_key = pref_key
-            self.tm.pending_pref_value = pref_value
-            self.tm.set_state("Confirmation", prompt=prompt)
-            self.tm.speak()
-        else:
-            self.tm.preferences.update(self.extracted_prefs)
-            self.move_to_next_state()
+            print(f"DEBUG: Confirming preference: {pref_key} = {pref_value}")
+            if pref_value is not None:
+                prompt = self.generate_confirmation_prompt(pref_key, pref_value)
+                self.tm.pending_pref_key = pref_key
+                self.tm.pending_pref_value = pref_value
+                self.tm.set_state("Confirmation", prompt=prompt)
+                self.tm.speak()
+                return
+        
+        print("DEBUG: All preferences confirmed. Moving to next state.")
+        print(f"DEBUG: Final TransitionManager preferences: {self.tm.preferences}")
+        self.move_to_next_state()
 
     def move_to_next_state(self):
+        print("DEBUG: Moving to next state")
         missing_preferences = [key for key in ['location', 'price_range', 'food_type'] if self.tm.preferences.get(key) is None]
+        print(f"DEBUG: Missing preferences: {missing_preferences}")
 
         if not missing_preferences:
+            print("DEBUG: All preferences collected. Moving to Collect Candidates.")
             self.tm.set_state("5. Collect Candidates")
         else:
             next_state = self.determine_next_state(self.tm.preferences)
-            self.tm.set_state(next_state)
+            print(f"DEBUG: Moving to state: {next_state}")
+            if next_state == self.tm.current_state.name:
+                print("DEBUG: Warning: Attempting to move to the same state. Moving to Collect Candidates instead.")
+                self.tm.set_state("5. Collect Candidates")
+            else:
+                self.tm.set_state(next_state)
         self.tm.speak()
 
     def handle_confirmation(self, user_input: str, dialogue_act: str):
+        print(f"DEBUG: Handling confirmation. Dialogue act: {dialogue_act}")
         if dialogue_act in ['affirm', 'yes', 'confirm']:
-            pref_key = self.tm.pending_pref_key
-            pref_value = self.tm.pending_pref_value
-            self.tm.update_preferences(pref_key, pref_value)
-            self.confirm_next_preference()
+            if hasattr(self.tm, 'pending_additional_req_key'):
+                # Handling additional requirement confirmation
+                req_key = self.tm.pending_additional_req_key
+                req_value = self.tm.pending_additional_req_value
+                print(f"DEBUG: Confirming additional requirement: {req_key} = {req_value}")
+                self.tm.additional_requirements[req_key] = req_value
+                print(f"DEBUG: Updated TransitionManager additional requirements: {self.tm.additional_requirements}")
+                delattr(self.tm, 'pending_additional_req_key')
+                delattr(self.tm, 'pending_additional_req_value')
+                self.confirm_next_additional_requirement()
+            else:
+                # Handling primary preference confirmation
+                pref_key = self.tm.pending_pref_key
+                pref_value = self.tm.pending_pref_value
+                print(f"DEBUG: Confirming preference: {pref_key} = {pref_value}")
+                self.tm.preferences[pref_key] = pref_value
+                if pref_key in self.extracted_prefs:
+                    del self.extracted_prefs[pref_key]
+                print(f"DEBUG: Updated TransitionManager preferences: {self.tm.preferences}")
+                self.confirm_next_preference()
         elif dialogue_act in ['deny', 'no', 'negate']:
-            pref_key = self.tm.pending_pref_key
-            self.tm.update_preferences(pref_key, None)
-            self.move_to_next_state()
+            if hasattr(self.tm, 'pending_additional_req_key'):
+                # Handling additional requirement denial
+                req_key = self.tm.pending_additional_req_key
+                print(f"DEBUG: Denying additional requirement: {req_key}")
+                delattr(self.tm, 'pending_additional_req_key')
+                delattr(self.tm, 'pending_additional_req_value')
+                self.confirm_next_additional_requirement()
+            else:
+                # Handling primary preference denial
+                pref_key = self.tm.pending_pref_key
+                print(f"DEBUG: Denying preference: {pref_key}")
+                self.tm.preferences[pref_key] = None
+                if pref_key in self.extracted_prefs:
+                    del self.extracted_prefs[pref_key]
+                print(f"DEBUG: Updated TransitionManager preferences: {self.tm.preferences}")
+                self.move_to_next_state()
         else:
             self.handle_invalid_input("confirmation")
 
@@ -186,7 +227,7 @@ class DialogueManager:
             return "3. Ask Price Range"
         elif preferences.get('food_type') is None:
             return "4. Ask Food Type"
-        return "5. Collect Candidates"
+        return "5. Collect Candidates"  # Add this line to ensure we move to collect candidates when all preferences are filled
 
     def handle_collect_candidates(self):
         self.tm.candidate_restaurants = self.restaurant_lookup.get_candidates(self.tm.preferences)
@@ -201,46 +242,124 @@ class DialogueManager:
         elif dialogue_act in ["affirm", "request", "remove", "confirm", "ack"]:
             additional_requirements, _ = self.preference_extractor.extract_additional_requirements(user_input)
             if isinstance(additional_requirements, dict) and additional_requirements:
-                self.tm.additional_requirements.update(additional_requirements)
-            self.suggest_restaurant(allow_alternatives=True)
+                self.additional_requirements_to_confirm = list(additional_requirements.keys())
+                self.extracted_additional_reqs = additional_requirements
+                self.confirm_next_additional_requirement()
+            else:
+                self.suggest_restaurant(allow_alternatives=True)
         else:
             self.handle_invalid_input("additional requirements")
 
-    def suggest_restaurant(self, allow_alternatives=False):
-        candidates = self.restaurant_lookup.get_candidates(self.tm.preferences)
-        selected_restaurant_data = self.restaurant_lookup.apply_inference_and_select(candidates, self.tm.additional_requirements)
+    def confirm_additional_requirements(self, additional_requirements):
+        self.additional_requirements_to_confirm = list(additional_requirements.keys())
+        self.extracted_additional_reqs = additional_requirements
+        self.confirm_next_additional_requirement()
 
-        if isinstance(selected_restaurant_data, str):
-            if allow_alternatives:
-                no_match_message = "No matching restaurants found. Suggesting alternatives."
-                self.output_message(no_match_message)
-
-                selected_restaurant_data = self.restaurant_lookup.apply_inference_and_select(candidates, {})
-                if isinstance(selected_restaurant_data, str):
-                    no_alternatives_message = "No suitable alternatives found."
-                    self.output_message(no_alternatives_message)
-                else:
-                    self.suggest_specific_restaurant(selected_restaurant_data, {})
-            else:
-                message = "No matching restaurants found." if not assignment_1c.config.use_formal_language else "Regrettably, no restaurants meet your preferences."
-                self.output_message(message)
+    def confirm_next_additional_requirement(self):
+        if self.additional_requirements_to_confirm:
+            req_key = self.additional_requirements_to_confirm.pop(0)
+            req_value = self.extracted_additional_reqs[req_key]
+            prompt = self.generate_additional_req_confirmation_prompt(req_key, req_value)
+            self.tm.pending_additional_req_key = req_key
+            self.tm.pending_additional_req_value = req_value
+            self.tm.set_state("Confirmation", prompt=prompt)
+            self.tm.speak()
         else:
-            self.suggest_specific_restaurant(selected_restaurant_data, self.tm.additional_requirements)
+            print("DEBUG: All additional requirements confirmed. Moving to suggest restaurant.")
+            self.suggest_restaurant(allow_alternatives=True)
 
+    def generate_additional_req_confirmation_prompt(self, req_key: str, req_value: bool) -> str:
+        if assignment_1c.config.use_formal_language:
+            return f"You mentioned you would like a {req_key} restaurant. Is that correct?"
+        else:
+            return f"So, you want a {req_key} place, right?"
+
+    def suggest_restaurant(self, allow_alternatives=False):
+        print("DEBUG: Entering suggest_restaurant method")
+        print(f"DEBUG: Current preferences: {self.tm.preferences}")
+        print(f"DEBUG: Additional requirements: {self.tm.additional_requirements}")
+
+        preference_combinations = [
+            ['location', 'price_range', 'food_type'],
+            ['location', 'price_range'],
+            ['location', 'food_type'],
+            ['price_range', 'food_type'],
+            ['location'],
+            ['price_range'],
+            ['food_type'],
+            []
+        ]
+
+        for combination in preference_combinations:
+            print(f"DEBUG: Trying preference combination: {combination}")
+            current_preferences = {k: self.tm.preferences[k] for k in combination if k in self.tm.preferences}
+            print(f"DEBUG: Current preferences for this iteration: {current_preferences}")
+
+            candidates = self.restaurant_lookup.get_candidates(current_preferences)
+            print(f"DEBUG: Number of candidates found: {len(candidates)}")
+
+            if not candidates.empty:
+                selected_restaurant_data = self.restaurant_lookup.apply_inference_and_select(candidates, self.tm.additional_requirements)
+                if isinstance(selected_restaurant_data, dict):
+                    print("DEBUG: Found a matching restaurant")
+                    self.suggest_specific_restaurant(selected_restaurant_data, self.tm.additional_requirements, is_alternative=(combination != ['location', 'price_range', 'food_type']))
+                    return  # Exit the method after suggesting a restaurant
+                else:
+                    print("DEBUG: No restaurant found matching additional requirements, trying without them")
+                    selected_restaurant_data = self.restaurant_lookup.apply_inference_and_select(candidates, {})
+                    if isinstance(selected_restaurant_data, dict):
+                        print("DEBUG: Found a restaurant without considering additional requirements")
+                        self.suggest_specific_restaurant(selected_restaurant_data, {}, is_alternative=True)
+                        return  # Exit the method after suggesting a restaurant
+            
+            if combination:
+                removed_pref = set(self.tm.preferences.keys()) - set(combination)
+                removed_pref = list(removed_pref)[0] if removed_pref else "all primary"
+                message = self.get_relaxed_preference_message(removed_pref)
+                self.output_message(message)
+
+        if all(candidates.empty for candidates in [self.restaurant_lookup.get_candidates({k: self.tm.preferences[k]}) for k in combination if k in self.tm.preferences] for combination in preference_combinations):
+            message = "I apologize, but I couldn't find any restaurants in our database. Please try again with different preferences."
+            self.output_message(message)
+            self.handle_goodbye()  # End the conversation if no restaurants are found
+
+        self.first_suggestion = True
         self.tm.set_state("10. Intermediate (Alternative) State")
         self.tm.speak()
 
-    def suggest_specific_restaurant(self, selected_restaurant_data, requirements):
+    def suggest_specific_restaurant(self, selected_restaurant_data, requirements, is_alternative=False):
         restaurant_name = selected_restaurant_data['restaurant']['restaurantname']
         if restaurant_name not in self.suggested_restaurants:
             self.suggested_restaurants.add(restaurant_name)
             reasoning = self.restaurant_lookup.generate_reasoning(selected_restaurant_data, requirements)
-            if assignment_1c.config.use_formal_language:
-                message = f"Based on your preferences, I recommend {restaurant_name}. {reasoning}"
+            if is_alternative:
+                if assignment_1c.config.use_formal_language:
+                    message = f"I couldn't find an exact match, but I found an alternative that might interest you: {restaurant_name}. {reasoning}"
+                else:
+                    message = f"I couldn't find exactly what you wanted, but here's an option that might work: {restaurant_name}. {reasoning}"
             else:
-                message = f"How about {restaurant_name}? {reasoning}"
+                if assignment_1c.config.use_formal_language:
+                    message = f"Based on your preferences, I recommend {restaurant_name}. {reasoning}"
+                else:
+                    message = f"How about {restaurant_name}? {reasoning}"
             
             self.output_message(message)
+            
+            # Always ask if the user wants to see another option
+            self.ask_for_alternative()
+            
+            # Set the state to intermediate state
+            self.tm.set_state("10. Intermediate (Alternative) State")
+        else:
+            print(f"DEBUG: Restaurant {restaurant_name} has already been suggested")
+            self.suggest_alternative_restaurant()
+
+    def ask_for_alternative(self):
+        if assignment_1c.config.use_formal_language:
+            question = "Would you like to hear about another restaurant option?"
+        else:
+            question = "Want to hear about another restaurant?"
+        self.output_message(question)
 
     def handle_suggest_restaurant(self):
         candidates = self.restaurant_lookup.get_candidates(self.tm.preferences)
@@ -260,17 +379,27 @@ class DialogueManager:
         self.tm.speak()
 
     def handle_intermediate_state(self, user_input: str, dialogue_act: str):
-        prompt = "Would you like to see an alternative restaurant recommendation?" if assignment_1c.config.use_formal_language else "Want to see another restaurant option?"
-        self.output_message(prompt)
-
+        print(f"DEBUG: Handling intermediate state. User input: {user_input}, Dialogue act: {dialogue_act}")
+        
         if dialogue_act in ['affirm', 'yes', 'alternative', 'another option']:
+            print("DEBUG: User requested alternative restaurant")
             self.suggest_alternative_restaurant()
         elif dialogue_act in ['deny', 'no', 'negate', 'bye', 'thankyou', 'thank you']:
+            print("DEBUG: User declined alternative restaurant")
             self.handle_goodbye()
         else:
-            self.handle_invalid_input("intermediate state")
+            print(f"DEBUG: Unrecognized dialogue act in intermediate state: {dialogue_act}")
+            clarification = "I'm sorry, I didn't understand. Would you like to hear about another restaurant, or shall we end the conversation?" if assignment_1c.config.use_formal_language else "Sorry, I didn't catch that. Do you want to hear about another restaurant or are we done?"
+            self.output_message(clarification)
+            self.tm.set_state("10. Intermediate (Alternative) State")
+            self.tm.speak()
 
     def suggest_alternative_restaurant(self):
+        print(f"DEBUG: Entering suggest_alternative_restaurant")
+        print(f"DEBUG: Current preferences: {self.tm.preferences}")
+        print(f"DEBUG: Additional requirements: {self.tm.additional_requirements}")
+        print(f"DEBUG: Previously suggested restaurants: {self.suggested_restaurants}")
+
         primary_preferences = {k: v for k, v in self.tm.preferences.items() if k in ['location', 'price_range', 'food_type']}
         additional_requirements = self.tm.additional_requirements.copy()
         
@@ -286,15 +415,30 @@ class DialogueManager:
         ]
         
         for combination in preference_combinations:
+            print(f"DEBUG: Trying preference combination: {combination}")
             current_preferences = {k: primary_preferences[k] for k in combination if k in primary_preferences}
-            current_preferences.update(additional_requirements)
+            print(f"DEBUG: Current preferences for this iteration: {current_preferences}")
             
             candidates = self.restaurant_lookup.get_candidates(current_preferences)
-            candidates = candidates[~candidates['restaurantname'].isin(self.suggested_restaurants)]
+            print(f"DEBUG: Number of candidates found: {len(candidates)}")
             
             if not candidates.empty:
-                self.suggest_from_candidates(candidates)
-                return
+                candidates = candidates[~candidates['restaurantname'].isin(self.suggested_restaurants)]
+                print(f"DEBUG: Number of candidates after filtering suggested restaurants: {len(candidates)}")
+                
+                if not candidates.empty:
+                    selected_restaurant = self.restaurant_lookup.apply_inference_and_select(candidates, additional_requirements)
+                    print(f"DEBUG: Selected restaurant: {selected_restaurant}")
+                    
+                    if isinstance(selected_restaurant, dict):
+                        self.suggest_specific_restaurant(selected_restaurant, additional_requirements)
+                        return
+                    else:
+                        print(f"DEBUG: No restaurant found matching additional requirements: {additional_requirements}")
+                else:
+                    print("DEBUG: All candidates have been suggested before")
+            else:
+                print("DEBUG: No candidates found for this preference combination")
             
             if combination:
                 removed_pref = set(primary_preferences.keys()) - set(combination)
@@ -306,19 +450,10 @@ class DialogueManager:
         self.output_message(message)
         
         self.suggested_restaurants.clear()
+        print("DEBUG: Cleared suggested restaurants list")
         
         self.tm.set_state("10. Intermediate (Alternative) State")
         self.tm.speak()
-
-    def suggest_from_candidates(self, candidates):
-        if candidates.empty:
-            message = self.get_no_more_restaurants_message()
-        else:
-            selected_restaurant = candidates.sample(n=1).iloc[0]
-            self.suggested_restaurants.add(selected_restaurant['restaurantname'])
-            message = self.get_restaurant_suggestion_message(selected_restaurant)
-        
-        self.output_message(message)
 
     def get_relaxed_preference_message(self, pref):
         if pref == "all primary":
@@ -412,3 +547,4 @@ class DialogueManager:
         }
         prompt = formal_prompts.get(pref_key, "Could you please provide more details?") if assignment_1c.config.use_formal_language else informal_prompts.get(pref_key, "Can you give me more info?")
         return prompt.upper() if assignment_1c.config.all_caps else prompt
+
