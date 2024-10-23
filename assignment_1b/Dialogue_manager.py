@@ -12,6 +12,8 @@ class DialogueManager:
         self.preference_extractor = preference_extractor
         self.model = model
         self.restaurant_lookup = restaurant_lookup
+        self.conversation_started = False
+        self.messages = []
 
         self.suggested_restaurants = set()
         self.first_suggestion = True
