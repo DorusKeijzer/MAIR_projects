@@ -28,6 +28,7 @@ class DialogueManager:
             return {"response": initial_response}
         else:
             return {"response": "Conversation already started."}
+
     def continue_conversation(self, user_input):
         """Continue the conversation based on user input."""
         print(f"Continue the conversation based on user input: {user_input}")

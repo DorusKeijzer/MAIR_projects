@@ -1,27 +1,3 @@
-<!--<!DOCTYPE html>-->
-<!--<html lang="en">-->
-<!--<head>-->
-<!--    <meta charset="UTF-8">-->
-<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
-<!--    <title>Your App</title>-->
-<!--    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">-->
-<!--</head>-->
-<!--<body>-->
-<!--    <div class="messages" id="messages"></div> -->
-<!--    <div class="input-container">-->
-<!--        <input type="text" class="user-input" id="userInput" placeholder="Type your message here..."> -->
-<!--        <button class="submit-btn" onclick="sendMessage()">Send</button> -->
-<!---->
-<!--        <button class="reset-btn" onclick="resetConversation()">Reset Conversation</button> -->
-<!--        <button class="end-btn" onclick="endConversation()">End Conversation</button> -->
-<!--    </div>-->
-<!---->
-<!---->
-<!--    <script src="{{ url_for('static', filename='js/script.js') }}"></script>-->
-<!--</body>-->
-<!--</html>-->
-<!---->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,7 +16,15 @@
         <button class="end-btn" onclick="endConversation()">End Conversation</button>
     </div>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
+
+    <div class="explanation"><p><b>Possible locations: </b> North, East, West, South</p>
+      <p><b>Possible price points: </b>low, medium, high</p>
+      <p><b>Possible cuisines:</b> british, modern european, italian, romanian, seafood, chinese, steakhouse, asian oriental, french, portuguese, indian, spanish, european, vietnamese, korean, thai, moroccan, swiss, fusion, gastropub, tuscan, international, traditional, mediterranean, polynesian, african, turkish, bistro, north american, australasian, persian, jamaican, lebanese, cuban, japanese, catalan
+
+
+    </div>
+
+  </body>
 </html>
 
 
