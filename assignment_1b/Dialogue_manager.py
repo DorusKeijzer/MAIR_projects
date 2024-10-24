@@ -7,14 +7,14 @@ from assignment_1b.lookup_restaurant import RestaurantLookup
 
 
 class DialogueManager:
-    def __init__(self, tm: TransitionManager, preference_extractor: PreferenceExtractor, model: DecisionTreeModel, restaurant_lookup: RestaurantLookup):
+    def __init__(self, tm: TransitionManager, preference_extractor: PreferenceExtractor, model: DecisionTreeModel, restaurant_lookup: RestaurantLookup ):
         self.tm = tm
         self.preference_extractor = preference_extractor
         self.model = model
         self.restaurant_lookup = restaurant_lookup
         self.conversation_started = False
         self.messages = []
-
+        self.preference_confirmation = True 
         self.suggested_restaurants = set()
         self.first_suggestion = True
         self.pending_messages = []  # Add this new attribute
@@ -101,7 +101,7 @@ class DialogueManager:
         extracted_prefs, _ = self.preference_extractor.extract_preferences(user_input)
         print(f"DEBUG: Extracted preferences: {extracted_prefs}")
 
-        if assignment_1c.config.ask_preference_confirmation:
+        if self.preference_confirmation:
             self.preferences_to_confirm = list(extracted_prefs.keys())
             self.extracted_prefs = extracted_prefs
             self.confirm_next_preference()
@@ -194,7 +194,7 @@ class DialogueManager:
         if dialogue_act == "inform":
             extracted_prefs, _ = self.preference_extractor.extract_preferences(user_input)
             if extracted_prefs.get('location'):
-                if assignment_1c.config.ask_preference_confirmation:
+                if self.preference_confirmation:
                     self.tm.pending_pref_key = 'location'
                     self.tm.pending_pref_value = extracted_prefs['location']
                     prompt = self.generate_confirmation_prompt('location', extracted_prefs['location'])
@@ -213,7 +213,7 @@ class DialogueManager:
         if dialogue_act == "inform":
             extracted_prefs, _ = self.preference_extractor.extract_preferences(user_input)
             if extracted_prefs.get('price_range'):
-                if assignment_1c.config.ask_preference_confirmation:
+                if self.preference_confirmation:
                     self.tm.pending_pref_key = 'price_range'
                     self.tm.pending_pref_value = extracted_prefs['price_range']
                     prompt = self.generate_confirmation_prompt('price_range', extracted_prefs['price_range'])
@@ -232,7 +232,7 @@ class DialogueManager:
         if dialogue_act == "inform":
             extracted_prefs, _ = self.preference_extractor.extract_preferences(user_input)
             if extracted_prefs.get('food_type'):
-                if assignment_1c.config.ask_preference_confirmation:
+                if self.preference:
                     self.tm.pending_pref_key = 'food_type'
                     self.tm.pending_pref_value = extracted_prefs['food_type']
                     prompt = self.generate_confirmation_prompt('food_type', extracted_prefs['food_type'])

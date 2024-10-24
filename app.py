@@ -1,12 +1,10 @@
-
 import os
 import uuid
 import logging
 from flask import Flask, jsonify, render_template, request
-from flask_session import Session
 from main import initialize_states, PreferenceExtractor, RestaurantLookup, DecisionTreeModel, DialogueManager
 from assignment_1a.read_data import train_data_bow, train_label
-import assignment_1c.config as config  # Import the config module
+import assignment_1c.config as config
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -15,29 +13,33 @@ dialogue_managers = {}
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    """Default route with normal preference settings"""
+    # Default behavior: assume 'yes_pref' by default
+    return render_template('index.html', preference_mode="default")
 
-def create_dialogue_manager(preference_confirmation=None):
-    tm = initialize_states()
-    preference_extractor = PreferenceExtractor()
-    restaurant_lookup = RestaurantLookup()
-    model = DecisionTreeModel(train_data_bow, train_label)
-    
-    weights_path = os.path.join(os.getcwd(), "assignment_1a", "model_weights", "decision_tree_model_normal.joblib")
-    model.load_weights(weights_path)
-    
-    # Set the preference confirmation based on the argument
-    config.ask_preference_confirmation = preference_confirmation
-    dialogue_manager = DialogueManager(tm, preference_extractor, model, restaurant_lookup)
-    return dialogue_manager
+@app.route('/<preference>/')
+def preference_route(preference):
+    """Handle different preference modes via URL paths"""
+    if preference not in ['no_pref', 'yes_pref']:
+        return jsonify({"error": "Invalid preference value"}), 400
+
+    # Render template with the preference mode specified in the URL
+    return render_template('index.html', preference_mode=preference)
 
 @app.route('/start', methods=['POST'])
 def start_conversation():
-    app.logger.info("Starting a new conversation")
+    data = request.get_json()
+    preference_mode = data.get('preference_mode', 'default')
+
+    app.logger.info(f"Starting conversation with preference_mode: {preference_mode}")
+    
+    # Generate a user ID and create a dialogue manager
     user_id = str(uuid.uuid4())
-    dialogue_manager = create_dialogue_manager()
+    dialogue_manager = create_dialogue_manager(preference_mode=preference_mode)
+    
+    # Store the dialogue manager in memory (by user ID)
     dialogue_managers[user_id] = dialogue_manager
-    print(f"user id: {user_id}") 
+    
     initial_message = dialogue_manager.start_conversation()
     app.logger.info(f"Initial message: {initial_message}")
 
@@ -59,21 +61,25 @@ def chat():
     data = request.get_json()
     user_id = data.get('user_id')
     user_input = data.get('message', '')
-    
+
     app.logger.info(f"Received chat request. User ID: {user_id}, Message: {user_input}")
     
+    # Retrieve the dialogue manager by user ID
     dialogue_manager = dialogue_managers.get(user_id)
     if dialogue_manager is None:
         app.logger.error(f"No dialogue manager found for user ID: {user_id}")
         return jsonify({"error": "Conversation not started"}), 400
-
+    
+    # Use the user-specific preference mode stored in the dialogue manager
+    preference_confirmation = dialogue_manager.preference_confirmation
+    
+    # Continue the conversation based on user input
     dialogue_manager.add_user_message(user_input)
     bot_response = dialogue_manager.continue_conversation(user_input)
     
     app.logger.info(f"Bot response: {bot_response}")
     
     messages = dialogue_manager.get_messages()
-    
     formatted_messages = [
         {"sender": "bot" if i % 2 == 0 else "user", "content": msg}
         for i, msg in enumerate(messages)
@@ -86,40 +92,27 @@ def chat():
         }
     })
 
-@app.route('/end', methods=['POST'])
-def end_conversation():
-    app.logger.info("Ending conversation")
+def create_dialogue_manager(preference_mode='default'):
+    """Creates a DialogueManager with user-specific preference settings."""
+    tm = initialize_states()
+    preference_extractor = PreferenceExtractor()
+    restaurant_lookup = RestaurantLookup()
+    model = DecisionTreeModel(train_data_bow, train_label)
     
-    data = request.get_json()
-    user_id = data.get('user_id')
+    # Load model weights
+    weights_path = os.path.join(os.getcwd(), "assignment_1a", "model_weights", "decision_tree_model_normal.joblib")
+    model.load_weights(weights_path)
     
-    if user_id in dialogue_managers:
-        del dialogue_managers[user_id]
-        app.logger.info(f"Conversation ended for user ID: {user_id}")
-        return jsonify({"message": "Conversation ended"}), 200
-    else:
-        app.logger.error(f"No active conversation found for user ID: {user_id}")
-        return jsonify({"error": "No active conversation found"}), 400
-
-@app.route('/<preference>/')
-def set_preference(preference):
-    """Route to set preference confirmation based on URL."""
-    if preference == 'no_pref':
-        config.ask_preference_confirmation = False
-    elif preference == 'yes_pref':
-        config.ask_preference_confirmation = True
-    else:
-        return jsonify({"error": "Invalid preference value"}), 400
-
-    # Start a new conversation with the set preference
-    user_id = str(uuid.uuid4())
-    dialogue_manager = create_dialogue_manager(config.ask_preference_confirmation)
-    dialogue_managers[user_id] = dialogue_manager
-    initial_message = dialogue_manager.start_conversation()
+    # Initialize dialogue manager with a preference mode
+    dialogue_manager = DialogueManager(tm, preference_extractor, model, restaurant_lookup)
     
-    return render_template('index.html', initial_message=initial_message, user_id=user_id)
+    # Set user-specific preference in the dialogue manager
+    if preference_mode == 'yes_pref':
+        dialogue_manager.preference_confirmation = True
+    else: 
+        dialogue_manager.preference_confirmation = False
+    return dialogue_manager
 
-if __name__ == '__main__':
-    app.logger.info("Starting Flask app...")
-    app.run(host='0.0.0.0', port=5000, debug=True)
 
+if __name__ == "__main__":
+    app.run(debug=True)  # Set debug=True for development; remove in production

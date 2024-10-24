@@ -1,9 +1,10 @@
 let conversationStarted = false;
 let userId = null;
 
+
+
 document.addEventListener('DOMContentLoaded', (event) => {
     loadConversationState();
-    // Start the conversation immediately
     startConversation();
 });
 
@@ -23,12 +24,36 @@ function saveConversationState() {
     }));
 }
 
+function extractMessageContent(messageObj) {
+    if (!messageObj) return '';
+    
+    // Handle response object with nested array
+    if (messageObj.response && Array.isArray(messageObj.response)) {
+        return messageObj.response[0];
+    }
+    
+    // Handle array where second element is the message
+    if (Array.isArray(messageObj)) {
+        return messageObj[1]; // Get the second element which is the actual message
+    }
+    
+    // Handle string
+    if (typeof messageObj === 'string') {
+        return messageObj;
+    }
+    
+    return '';
+}
+
 function startConversation() {
     fetch('/start', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+            preference_mode: window.PREFERENCE_MODE || 'default'
+        })
     })
     .then(response => response.json())
     .then(data => {
@@ -38,10 +63,9 @@ function startConversation() {
         
         if (data.data && Array.isArray(data.data.messages)) {
             data.data.messages.forEach(message => {
-                displayMessage(message.sender, message.content.response);
+                const content = extractMessageContent(message.content);
+                displayMessage(message.sender, content);
             });
-        } else {
-            console.error('Unexpected response structure:', data);
         }
         
         enableChatInput();
@@ -57,7 +81,6 @@ function sendMessage() {
     displayMessage('user', userInput);
     document.getElementById('userInput').value = '';
 
-    // If the conversation has already started, send the message directly
     if (conversationStarted) {
         sendChatMessage(userInput);
     }
@@ -78,12 +101,12 @@ function sendChatMessage(userInput) {
         if (data.error && !data.conversationStarted) {
             startConversation();
         } else if (data.data && Array.isArray(data.data.messages)) {
-            const newMessages = data.data.messages.slice(-2);
-            newMessages.forEach(message => {
-                if (message.sender !== 'user') {
-                    displayMessage(message.sender, message.content);
-                }
-            });
+            const newMessages = data.data.messages;
+            const lastBotMessage = newMessages.filter(msg => msg.sender === 'bot').pop();
+            if (lastBotMessage) {
+                const content = extractMessageContent(lastBotMessage.content);
+                displayMessage(lastBotMessage.sender, content);
+            }
         } else {
             console.error('Unexpected response structure:', data);
         }
@@ -132,11 +155,10 @@ function displayMessage(sender, message) {
     messageElement.textContent = `${sender}: ${message}`;
     chatBox.appendChild(messageElement);
 
-    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 function enableChatInput() {
     document.getElementById('userInput').disabled = false;
 }
-
 
