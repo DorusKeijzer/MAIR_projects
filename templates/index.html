@@ -8,6 +8,14 @@
     <script>
         // Pass the preference mode from Flask to JavaScript
         window.PREFERENCE_MODE = "{{ preference_mode }}";
+        window.onload = function() {
+            const body = document.body;
+            if (window.PREFERENCE_MODE === "no_pref") {
+                body.style.backgroundColor = "hsl(0, 100%, 90%)";  // Pastel Red
+            } else {
+                body.style.backgroundColor = "hsl(210, 100%, 90%)";  // Pastel Blue
+            }
+        };
     </script>
 </head>
 <body>
@@ -20,6 +28,8 @@
         <button class="end-btn" onclick="endConversation()">End Conversation</button>
     </div>
     <div class="explanation">
+        
+        <p><b>Instructions: </b>You can use this chatbot to suggest a restaurant. Tell the bot your preferences and it will help you out</p>
         <p><b>Possible locations: </b> North, East, West, South</p>
         <p><b>Possible price points: </b>low, medium, high</p>
         <p><b>Possible cuisines:</b> british, modern european, italian, romanian, seafood, chinese, steakhouse, asian oriental, french, portuguese, indian, spanish, european, vietnamese, korean, thai, moroccan, swiss, fusion, gastropub, tuscan, international, traditional, mediterranean, polynesian, african, turkish, bistro, north american, australasian, persian, jamaican, lebanese, cuban, japanese, catalan</p>
