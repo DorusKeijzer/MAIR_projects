@@ -15,7 +15,7 @@ dialogue_managers = {}
 def index():
     """Default route with normal preference settings"""
     # Default behavior: assume 'yes_pref' by default
-    return render_template('index.html', preference_mode="default")
+    return render_template('landing.html', preference_mode="default")
 
 @app.route('/<preference>/')
 def preference_route(preference):
@@ -115,4 +115,4 @@ def create_dialogue_manager(preference_mode='default'):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)  # Set debug=True for development; remove in production
+    app.run(debug=False)  # Set debug=True for development; remove in production

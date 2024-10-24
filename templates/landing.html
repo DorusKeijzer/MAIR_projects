@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant reccomendation - Landing Page</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 20px 40px;
+      margin: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #fff;
+      border: none;
+      border-radius: 15px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .button-red {
+      background-color: #ff4d4d;
+    }
+
+    .button-blue {
+      background-color: #4d79ff;
+    }
+
+    .button-red:hover {
+      background-color: #ff3333;
+    }
+
+    .button-blue:hover {
+      background-color: #3366ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/no_pref/" class="button button-red">Chatbot Red</a>
+    <a href="/yes_pref/" class="button button-blue">Chatbot Blue</a>
+  </div>
+</body>
+</html>
+
