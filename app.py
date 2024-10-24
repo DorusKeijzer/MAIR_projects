@@ -25,7 +25,6 @@ def preference_route(preference):
 
     # Render template with the preference mode specified in the URL
     return render_template('index.html', preference_mode=preference)
-
 @app.route('/start', methods=['POST'])
 def start_conversation():
     data = request.get_json()
@@ -40,8 +39,11 @@ def start_conversation():
     # Store the dialogue manager in memory (by user ID)
     dialogue_managers[user_id] = dialogue_manager
     
-    initial_message = dialogue_manager.start_conversation()
-    app.logger.info(f"Initial message: {initial_message}")
+    initial_response = dialogue_manager.start_conversation()
+    app.logger.info(f"Initial message: {initial_response}")
+
+    # Extract the actual message content
+    initial_message = initial_response.get('response', [''])[0] if isinstance(initial_response, dict) else ''
 
     return jsonify({
         "conversationStarted": True,
@@ -50,12 +52,11 @@ def start_conversation():
             "messages": [
                 {
                     "sender": "bot",
-                    "content": initial_message
+                    "content": initial_message  # Send just the message content
                 }
             ]
         }
     })
-
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()

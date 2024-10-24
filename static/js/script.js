@@ -5,7 +5,7 @@ let userId = null;
 
 document.addEventListener('DOMContentLoaded', (event) => {
     loadConversationState();
-    startConversation();
+    starConversation();
 });
 
 function loadConversationState() {
@@ -27,24 +27,29 @@ function saveConversationState() {
 function extractMessageContent(messageObj) {
     if (!messageObj) return '';
     
-    // Handle response object with nested array
-    if (messageObj.response && Array.isArray(messageObj.response)) {
-        return messageObj.response[0];
-    }
-    
-    // Handle array where second element is the message
-    if (Array.isArray(messageObj)) {
-        return messageObj[1]; // Get the second element which is the actual message
-    }
-    
-    // Handle string
+    // If it's already a string, return it directly
     if (typeof messageObj === 'string') {
         return messageObj;
     }
     
+    // Handle object with response array
+    if (messageObj.response && Array.isArray(messageObj.response)) {
+        return messageObj.response[0] || '';
+    }
+    
+    // Handle responses array
+    if (messageObj.responses && typeof messageObj.responses === 'string') {
+        return messageObj.responses;
+    }
+    
+    // Handle array
+    if (Array.isArray(messageObj)) {
+        return messageObj[1] || messageObj[0] || '';
+    }
+    
+    // If we can't extract content, return empty string
     return '';
 }
-
 function startConversation() {
     fetch('/start', {
         method: 'POST',

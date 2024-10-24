@@ -7,7 +7,7 @@ from assignment_1b.lookup_restaurant import RestaurantLookup
 
 
 class DialogueManager:
-    def __init__(self, tm: TransitionManager, preference_extractor: PreferenceExtractor, model: DecisionTreeModel, restaurant_lookup: RestaurantLookup ):
+    def __init__(self, tm: TransitionManager, preference_extractor: PreferenceExtractor, model: DecisionTreeModel, restaurant_lookup: RestaurantLookup, ):
         self.tm = tm
         self.preference_extractor = preference_extractor
         self.model = model
