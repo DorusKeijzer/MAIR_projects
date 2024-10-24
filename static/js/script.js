@@ -162,3 +162,18 @@ function enableChatInput() {
     document.getElementById('userInput').disabled = false;
 }
 
+
+document.addEventListener('DOMContentLoaded', (event) => {
+    loadConversationState();
+    startConversation();
+
+    // Add keypress event listener for the user input
+    const userInputElement = document.getElementById('userInput');
+    userInputElement.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent the default action of the Enter key
+            sendMessage(); // Call the sendMessage function
+        }
+    });
+});
+
