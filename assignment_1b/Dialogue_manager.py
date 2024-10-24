@@ -17,7 +17,8 @@ class DialogueManager:
 
         self.suggested_restaurants = set()
         self.first_suggestion = True
-
+        self.pending_messages = []  # Add this new attribute
+    
     def start_conversation(self):
         """Start the conversation and return the initial message."""
         print("starting conversation")
@@ -25,23 +26,46 @@ class DialogueManager:
             self.conversation_started = True
             initial_response = self.tm.speak()
             self.output_message(initial_response)
-            return {"response": initial_response}
+            return {"response": [initial_response]}
         else:
             return {"response": "Conversation already started."}
 
+
+
     def continue_conversation(self, user_input):
         """Continue the conversation based on user input."""
-        print(f"Continue the conversation based on user input: {user_input}")
         if not self.conversation_started:
-            return {"response": "Conversation not started. Please start the conversation first."}
+            return {"responses": ["Conversation not started. Please start the conversation first."]}
 
         if self.tm.dead or self.tm.current_state.terminal:
-            return {"response": "Conversation ended."}
+            return {"responses": ["Conversation ended."]}
 
+        # Clear pending messages from previous turns
+        self.pending_messages = []
+        
+        # Process input and collect messages
         self.process_input(user_input)
-        response = self.tm.speak()
-        self.output_message(response)
-        return {"response": response}
+
+
+        # Handle automatic state transitions for collection and suggestion states
+        if self.tm.current_state.name == "5. Collect Candidates":
+            self.handle_collect_candidates()
+        elif self.tm.current_state.name == "6. Ask Additional Requirements":
+            response = self.tm.speak()
+            if response is not None:
+                self.output_message(response)
+
+        # Get response from transition manager if no messages were collected
+        if not self.pending_messages:
+            response = self.tm.speak()
+            if response is not None:
+                self.output_message(response)
+
+        # If still no messages were collected, something went wrong
+        if not self.pending_messages:
+            self.handle_error_state()
+        
+        return {"responses": "\n".join([msg for msg in self.pending_messages if msg is not None])}
 
     def process_input(self, user_input: str):
         if user_input:
@@ -232,10 +256,20 @@ class DialogueManager:
             return "4. Ask Food Type"
         return "5. Collect Candidates"  # Add this line to ensure we move to collect candidates when all preferences are filled
 
+
     def handle_collect_candidates(self):
+        """Modified to properly chain through to restaurant suggestions"""
+        print("DEBUG: Entering handle_collect_candidates")
         self.tm.candidate_restaurants = self.restaurant_lookup.get_candidates(self.tm.preferences)
-        self.tm.set_state("6. Ask Additional Requirements")
-        self.tm.speak()
+        
+        if self.tm.candidate_restaurants.empty:
+            self.output_message("I apologize, but I couldn't find any restaurants matching your criteria.")
+            self.handle_goodbye()
+            return
+
+        # Move directly to suggesting a restaurant if we have candidates
+        print("DEBUG: Found candidates, moving to suggestion")
+        self.suggest_restaurant(allow_alternatives=True)
 
     def handle_ask_additional_requirements(self, user_input: str, dialogue_act: str):
         if dialogue_act in ["deny", "negate"]:
@@ -280,61 +314,28 @@ class DialogueManager:
     def suggest_restaurant(self, allow_alternatives=False):
         print("DEBUG: Entering suggest_restaurant method")
         print(f"DEBUG: Current preferences: {self.tm.preferences}")
-        print(f"DEBUG: Additional requirements: {self.tm.additional_requirements}")
+        
+        candidates = self.restaurant_lookup.get_candidates(self.tm.preferences)
+        if candidates.empty:
+            self.output_message("I apologize, but I couldn't find any restaurants matching your criteria.")
+            self.handle_goodbye()
+            return
 
-        preference_combinations = [
-            ['location', 'price_range', 'food_type'],
-            ['location', 'price_range'],
-            ['location', 'food_type'],
-            ['price_range', 'food_type'],
-            ['location'],
-            ['price_range'],
-            ['food_type'],
-            []
-        ]
-
-        for combination in preference_combinations:
-            print(f"DEBUG: Trying preference combination: {combination}")
-            current_preferences = {k: self.tm.preferences[k] for k in combination if k in self.tm.preferences}
-            print(f"DEBUG: Current preferences for this iteration: {current_preferences}")
-
-            candidates = self.restaurant_lookup.get_candidates(current_preferences)
-            print(f"DEBUG: Number of candidates found: {len(candidates)}")
-
-            if not candidates.empty:
-                selected_restaurant_data = self.restaurant_lookup.apply_inference_and_select(candidates, self.tm.additional_requirements)
-                if isinstance(selected_restaurant_data, dict):
-                    print("DEBUG: Found a matching restaurant")
-                    self.suggest_specific_restaurant(selected_restaurant_data, self.tm.additional_requirements, is_alternative=(combination != ['location', 'price_range', 'food_type']))
-                    return  # Exit the method after suggesting a restaurant
-                else:
-                    print("DEBUG: No restaurant found matching additional requirements, trying without them")
-                    selected_restaurant_data = self.restaurant_lookup.apply_inference_and_select(candidates, {})
-                    if isinstance(selected_restaurant_data, dict):
-                        print("DEBUG: Found a restaurant without considering additional requirements")
-                        self.suggest_specific_restaurant(selected_restaurant_data, {}, is_alternative=True)
-                        return  # Exit the method after suggesting a restaurant
-            
-            if combination:
-                removed_pref = set(self.tm.preferences.keys()) - set(combination)
-                removed_pref = list(removed_pref)[0] if removed_pref else "all primary"
-                message = self.get_relaxed_preference_message(removed_pref)
-                self.output_message(message)
-
-        if all(candidates.empty for candidates in [self.restaurant_lookup.get_candidates({k: self.tm.preferences[k]}) for k in combination if k in self.tm.preferences] for combination in preference_combinations):
-            message = "I apologize, but I couldn't find any restaurants in our database. Please try again with different preferences."
-            self.output_message(message)
-            self.handle_goodbye()  # End the conversation if no restaurants are found
-
-        self.first_suggestion = True
-        self.tm.set_state("10. Intermediate (Alternative) State")
-        self.tm.speak()
+        selected_restaurant_data = self.restaurant_lookup.apply_inference_and_select(candidates, {})
+        if isinstance(selected_restaurant_data, dict):
+            self.suggest_specific_restaurant(selected_restaurant_data, {}, is_alternative=False)
+            # Move to intermediate state after suggestion
+            self.tm.set_state("10. Intermediate (Alternative) State")
+        else:
+            self.output_message("I apologize, but I couldn't find a suitable restaurant.")
+            self.handle_goodbye()            
 
     def suggest_specific_restaurant(self, selected_restaurant_data, requirements, is_alternative=False):
         restaurant_name = selected_restaurant_data['restaurant']['restaurantname']
         if restaurant_name not in self.suggested_restaurants:
             self.suggested_restaurants.add(restaurant_name)
             reasoning = self.restaurant_lookup.generate_reasoning(selected_restaurant_data, requirements)
+            
             if is_alternative:
                 if assignment_1c.config.use_formal_language:
                     message = f"I couldn't find an exact match, but I found an alternative that might interest you: {restaurant_name}. {reasoning}"
@@ -347,15 +348,14 @@ class DialogueManager:
                     message = f"How about {restaurant_name}? {reasoning}"
             
             self.output_message(message)
-            
-            # Always ask if the user wants to see another option
             self.ask_for_alternative()
-            
-            # Set the state to intermediate state
-            self.tm.set_state("10. Intermediate (Alternative) State")
+
+    def handle_error_state(self):
+        """Handle cases where no messages were generated"""
+        if assignment_1c.config.use_formal_language:
+            self.output_message("I apologize, but I encountered an issue processing your request. Would you like to try again?")
         else:
-            print(f"DEBUG: Restaurant {restaurant_name} has already been suggested")
-            self.suggest_alternative_restaurant()
+            self.output_message("Sorry, something went wrong. Want to try again?")
 
     def ask_for_alternative(self):
         if assignment_1c.config.use_formal_language:
@@ -394,8 +394,7 @@ class DialogueManager:
             print(f"DEBUG: Unrecognized dialogue act in intermediate state: {dialogue_act}")
             clarification = "I'm sorry, I didn't understand. Would you like to hear about another restaurant, or shall we end the conversation?" if assignment_1c.config.use_formal_language else "Sorry, I didn't catch that. Do you want to hear about another restaurant or are we done?"
             self.output_message(clarification)
-            self.tm.set_state("10. Intermediate (Alternative) State")
-            self.tm.speak()
+
 
     def suggest_alternative_restaurant(self):
         print(f"DEBUG: Entering suggest_alternative_restaurant")
@@ -434,7 +433,7 @@ class DialogueManager:
                     print(f"DEBUG: Selected restaurant: {selected_restaurant}")
                     
                     if isinstance(selected_restaurant, dict):
-                        self.suggest_specific_restaurant(selected_restaurant, additional_requirements)
+                        eelf.suggest_specific_restaurant(selected_restaurant, additional_requirements)
                         return
                     else:
                         print(f"DEBUG: No restaurant found matching additional requirements: {additional_requirements}")
@@ -494,12 +493,20 @@ class DialogueManager:
         return message
 
     def output_message(self, message):
+
+        if message is None:
+            return
         print("outputting message")
+
         if assignment_1c.config.all_caps:
             message = message.upper()
+        
         self.messages.append(("bot", message))  # Store the message
+        self.pending_messages.append(message)  # Add to pending messages
+        
         print("self.messages:", self.messages)
         print(message)
+        
         if assignment_1c.config.text_to_speech:
             self.tm.tts_engine.say(message)
             self.tm.tts_engine.runAndWait()
